@@ -58,7 +58,7 @@ def _format_message_for_summary(msg: Dict[str, Any]) -> Optional[str]:
     """将单条消息格式化为摘要用的文本，过滤掉 reasoning_content，工具消息只保留关键信息"""
     role = msg.get("role")
     if role == "user":
-        return f"[用户:\n{msg.get('content', '')}]"
+        return f"[User:\n{msg.get('content', '')}\n]"
     elif role == "assistant":
         # 助手消息：若有 tool_calls 则视为工具调用，否则为普通回复
         if msg.get("tool_calls"):
@@ -68,24 +68,24 @@ def _format_message_for_summary(msg: Dict[str, Any]) -> Optional[str]:
                 func = tc.get("function", {})
                 name = func.get("name", "")
                 args = func.get("arguments", "{}")
-                lines.append(f"[工具:\n{name}({args})]")
+                lines.append(f"Tool:\n{name}({args})")
             return "\n".join(lines)
         else:
             # 普通回复，忽略 reasoning_content
             content = msg.get('content', '')
             if content:
-                return f"[助手:\n{content}]"
+                return f"[Agent:\n{content}\n]"
             return None
     elif role == "tool":
         # 工具结果
         content = msg.get('content', '')
         if content:
-            return f"[结果:\n{content}]"
+            return f"[Tool result:\n{content}\n]"
         return None
     elif role == "system":
         content = msg.get('content', '')
         if content:
-            return f"[系统:\n{content}]"
+            return f"[System:\n{content}]"
         return None
     return None
 
@@ -104,13 +104,13 @@ def _call_llm_to_summarize(text: str, config: Dict[str, str]) -> str:
         api_key=config["api_key"],
         base_url=config["base_url"]
     )
-    prompt = f"请对以下对话内容进行简洁的摘要，保留关键信息，如初始目的、重要操作、重要决策，忽略无关细节：\n\n{text}"
+    prompt = f"请对以下用户与AI Agent的对话内容进行简短、全面、清晰、准确的总结摘要，高效提取关键信息，如目的重点、关键操作、重要决策等，忽略无关细节，不添加未出现信息：\n\n{text}"
     try:
         response = client.chat.completions.create(
             model=config["model"],
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
-            max_tokens=500
+            max_tokens=2048
         )
         return response.choices[0].message.content.strip()
     except Exception as e:

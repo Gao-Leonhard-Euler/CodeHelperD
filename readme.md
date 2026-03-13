@@ -90,6 +90,7 @@ python agent.py
 | `history_search` | 搜索聊天记录（按关键词、时间范围、角色等），统计消息条数，获取指定消息。 |
 | `history_save` | 保存当前会话的历史记录到文件，并从内存中移除已保存的部分（由 Agent 自主决定）。 |
 | `venv_manager` | 管理 Python 虚拟环境，支持在虚拟环境中执行代码。 |
+| `python_pdb` | 使用 pdb 调试 Python 代码。 |
 
 ## 项目文件结构
 
@@ -120,9 +121,10 @@ CodeHelperD/
 │   ├── key_info_manager.py
 │   ├── make_compiler.py
 │   ├── python_executor.py
+│   ├── python_pdb.py
 │   ├── venv_manager.py
 │   └── utils/
-│       └── cpp_bridge/
+│       └── cpp_bridge/            # C++ 实现的工具（可扩展）
 └── requirements.txt               # Python 依赖
 ```
 

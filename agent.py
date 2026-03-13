@@ -42,7 +42,7 @@ def load_config() -> Dict[str, Any]:
         except Exception as e:
             print(f"配置文件读取失败: {e}，将重新输入。")
     # 交互式输入
-    print("请输入DeepSeek配置信息（直接回车使用默认值）：")
+    print("请输入 api 配置信息（直接回车使用默认值）：")
     api_key = input("API Key: ").strip()
     base_url = input("Base URL (默认: https://api.deepseek.com): ").strip() or default_config["base_url"]
     model = input("Model (默认: deepseek-reasoner): ").strip() or default_config["model"]
@@ -77,7 +77,7 @@ def load_history_config() -> Dict[str, Any]:
         except Exception as e:
             print(f"历史摘要配置文件读取失败: {e}，将重新输入。")
     # 交互式输入
-    print("请输入历史摘要专用的DeepSeek配置信息（直接回车使用默认值）：")
+    print("请输入历史摘要专用的 api 配置信息（直接回车使用默认值）：")
     api_key = input("API Key: ").strip()
     base_url = input("Base URL (默认: https://api.deepseek.com): ").strip() or default_config["base_url"]
     model = input("Model (默认: deepseek-chat): ").strip() or default_config["model"]
@@ -284,7 +284,7 @@ def main():
         # 构建消息列表后，添加 token 检查
         current_tokens = count_tokens(messages_for_api)
         if current_tokens > MAX_TOKENS:
-            warning_msg = f"警告：当前对话长度 {current_tokens} 过高，考虑保存部分历史记录到文件。"
+            warning_msg = f"警告：当前对话长度 {current_tokens} 过长，考虑保存部分历史记录到文件。"
             messages_for_api.append({"role": "system", "content": warning_msg})
 
         # 工具调用循环
@@ -367,7 +367,7 @@ def main():
                 messages_for_api.extend(history)
                 current_tokens = count_tokens(messages_for_api)
                 if current_tokens > MAX_TOKENS:
-                    warning_msg = f"警告：对话长度 {current_tokens} 过高，考虑保存部分历史记录到文件。"
+                    warning_msg = f"警告：对话长度 {current_tokens} 过长，考虑保存部分历史记录到文件。"
                     messages_for_api.append({"role": "system", "content": warning_msg})
             else:
                 turn_finished = True
