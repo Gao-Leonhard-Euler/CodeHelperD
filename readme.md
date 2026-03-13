@@ -89,6 +89,7 @@ python agent.py
 | `history_summarize` | 生成或读取指定会话的摘要。 |
 | `history_search` | 搜索聊天记录（按关键词、时间范围、角色等），统计消息条数，获取指定消息。 |
 | `history_save` | 保存当前会话的历史记录到文件，并从内存中移除已保存的部分（由 Agent 自主决定）。 |
+| `venv_manager` | 管理 Python 虚拟环境，支持在虚拟环境中执行代码。 |
 
 ## 项目文件结构
 
@@ -103,7 +104,6 @@ CodeHelperD/
 │   ├── key_info.txt               # 长期关键信息
 │   ├── session_*.json             # 会话历史
 │   ├── session_*.txt              # 会话摘要
-│   └── archive_*.json             # 存档的历史记录
 ├── tools/                         # 工具模块
 │   ├── __init__.py                # 动态加载所有工具
 │   ├── cmake_compiler.py
