@@ -1,0 +1,6 @@
+__pycache__/
+tools/__pycache__/
+config.json
+history_config.json
+*.pyc
+*.json
