@@ -29,12 +29,12 @@ tool_def = {
             "properties": {
                 "action": {
                     "type": "string",
-                    "enum": ["run", "interact", "send", "stop", "list"],
-                    "description": "操作类型：run-运行一次代码；interact-启动交互式解释器；send-向会话发送输入；stop-停止会话；list-列出活跃会话。"
+                    "enum": ["run", "interact", "send", "stop", "list", "version", "help"],
+                    "description": "操作类型：run-运行一次代码；interact-启动交互式解释器；send-向会话发送输入；stop-停止会话；list-列出活跃会话；version-获取版本；help-获取帮助。"
                 },
                 "code": {
                     "type": "string",
-                    "description": "要执行的 Python 代码（用于 run 操作）"
+                    "description": "要执行的 Python 代码（用于 run 操作）或 help 要求（用于 help 操作，若输入 '-env' 则执行 'python --help-env'，默认为空）"
                 },
                 "timeout": {
                     "type": "number",
@@ -312,5 +312,26 @@ def execute(action: str,
                 lines.append(f"  {sid}: {status}")
             return "\n".join(lines)
 
+    # 获取版本
+    elif action == "version":
+        try:
+            result = subprocess.run([sys.executable, "--version"], capture_output=True, text=True, timeout=5, check=False)
+            output = result.stdout + (result.stderr if result.stderr else "")
+            if result.returncode != 0:
+                return f"获取版本失败：{output}"
+            return output.strip()
+        except Exception as e:
+            return f"执行出错：{e}"
+
+    #获取帮助
+    elif action == "help":
+        try:
+            result = subprocess.run([sys.executable, ("--help" if not code else ("--help"+code))], capture_output=True, text=True, timeout=10, check=False)
+            output = result.stdout + (result.stderr if result.stderr else "")
+            if result.returncode != 0:
+                return f"获取帮助失败：{output}"
+            return output.strip()
+        except Exception as e:
+            return f"执行出错：{e}"
     else:
         return f"错误：未知操作 {action}。"

@@ -91,6 +91,7 @@ python agent.py
 | `history_save` | 保存当前会话的历史记录到文件，并从内存中移除已保存的部分（由 Agent 自主决定）。 |
 | `venv_manager` | 管理 Python 虚拟环境，支持在虚拟环境中执行代码。 |
 | `python_pdb` | 使用 pdb 调试 Python 代码。 |
+| `java_debugger` | 编译和调试 Java 代码。 |
 
 ## 项目文件结构
 
@@ -123,6 +124,7 @@ CodeHelperD/
 │   ├── python_executor.py
 │   ├── python_pdb.py
 │   ├── venv_manager.py
+│   ├── java_debugger.py
 │   └── utils/
 │       └── cpp_bridge/            # C++ 实现的工具（可扩展）
 └── requirements.txt               # Python 依赖
@@ -132,7 +134,7 @@ CodeHelperD/
 
 1. **API Key**：请确保 API Key 有效且有足够的额度。
 2. **系统工具依赖**：部分工具（如 gcc、gdb、make、cmake）需要系统已安装相应程序，并加入 PATH。
-3. **路径安全**：所有文件操作均基于项目根目录。
+3. **路径安全**：Agent 有读、写、执行文件的权限，可以考虑在更安全的环境下运行或监视 Agent 的行为。
 4. **交互式会话**：在交互式工具（如 debugger、executor）中，输入 `exit_interact` 可退出当前交互模式（返回 Agent 主对话）。
 5. **Token 预警**：当对话长度超过 `length.txt` 中的阈值时，Agent 会收到系统提示，可主动调用 `history_save` 存档旧消息。
 6. **并发限制**：当前为单线程设计，不支持同时处理多个用户请求。

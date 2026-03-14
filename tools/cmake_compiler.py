@@ -15,10 +15,16 @@ tool_def = {
     "type": "function",
     "function": {
         "name": "cmake_build",
-        "description": "使用 CMake 配置并构建项目（先运行 cmake，然后运行构建命令，默认是 make）",
+        "description": "使用 CMake 配置并构建项目，或获取版本和帮助信息。",
         "parameters": {
             "type": "object",
             "properties": {
+                "action": {
+                    "type": "string",
+                    "enum": ["build", "version", "help"],
+                    "description": "操作类型：build-构建；version-获取版本；help-获取帮助。默认为 build。",
+                    "default": "build"
+                },
                 "source_dir": {
                     "type": "string",
                     "description": "包含 CMakeLists.txt 的源目录"
@@ -34,15 +40,15 @@ tool_def = {
                 },
                 "cmake_options": {
                     "type": "string",
-                    "description": "传递给 cmake 的额外选项，如 '-DCMAKE_BUILD_TYPE=Release'"
+                    "description": "传递给 cmake 的额外选项，如 '-DCMAKE_BUILD_TYPE=Release'；如果是 help，设为 '-full' 则会执行 'cmake --help-full'；默认为空"
                 },
                 "build_target": {
                     "type": "string",
-                    "description": "要构建的目标（传递给构建工具），默认不指定"
+                    "description": "传递给构建工具要构建的目标，或者传递给 help 的输出文件（若 cmake_options 支持），默认不指定"
                 },
                 "build_args": {
                     "type": "string",
-                    "description": "传递给构建工具（如 make）的额外参数，如 '-j4'"
+                    "description": "传递给构建工具（如 make）的额外参数，如 '-j4'，或者传递给 help 的关键字（若 cmake_options 支持）"
                 },
                 "timeout": {
                     "type": "integer",
@@ -55,73 +61,97 @@ tool_def = {
     }
 }
 
-def execute(source_dir: str, build_dir: str = "", generator: Optional[str] = None,
-            cmake_options: Optional[str] = "", build_target: Optional[str] = "",
-            build_args: Optional[str] = "", timeout: int = 300) -> str:
-    """
-    执行 CMake 配置和构建，返回合并的输出。
-    """
-    # 确定构建目录
-    if not build_dir:
-        build_dir = os.path.join(source_dir, "build")
-    os.makedirs(build_dir, exist_ok=True)
-
-    # 检查源目录是否存在
-    if not os.path.isdir(source_dir):
-        return f"Error: Source directory '{source_dir}' does not exist."
-
-    # ---- 第一步：cmake 配置 ----
-    cmake_cmd = ["cmake", source_dir]
-    if generator:
-        cmake_cmd.extend(["-G", generator])
-    if cmake_options:
-        cmake_cmd.extend(shlex.split(cmake_options))
-
-    try:
-        # 运行 cmake
-        result_cmake = subprocess.run(
-            cmake_cmd,
-            cwd=build_dir,
-            capture_output=True,
-            text=True,
-            timeout=timeout // 2,  # 分配一半时间给 cmake
-            check=False
-        )
-        output = "=== CMake Output ===\n" + result_cmake.stdout
-        if result_cmake.stderr:
-            output += "\n" + result_cmake.stderr
-        if result_cmake.returncode != 0:
-            return f"CMake configuration failed (return code {result_cmake.returncode}):\n{output}"
-
-        # ---- 第二步：构建 ----
-        # 检测使用什么构建工具（基于生成器，但简单起见，假设 make 或 ninja）
-        # 这里简化：直接调用 cmake --build
-        build_cmd = ["cmake", "--build", "."]
-        if build_target:
-            build_cmd.extend(["--target", build_target])
+def execute(action: str = "build", source_dir: Optional[str] = None, build_dir: str = "",
+            generator: Optional[str] = None, cmake_options: Optional[str] = "",
+            build_target: Optional[str] = "", build_args: Optional[str] = "",
+            timeout: int = 300) -> str:
+    if action == "version":
+        try:
+            result = subprocess.run(["cmake", "--version"], capture_output=True, text=True, timeout=10, check=False)
+            output = result.stdout + (result.stderr if result.stderr else "")
+            return output.strip() if result.returncode == 0 else f"获取版本失败：{output}"
+        except FileNotFoundError:
+            return "错误：找不到 cmake 命令。"
+        except Exception as e:
+            return f"执行出错：{e}"
+    elif action == "help":
+        cmake_cmd=["cmake", ("--help" if not cmake_options else ("--help"+cmake_options))]
         if build_args:
-            # -- 之后传递参数给构建工具
-            build_cmd.append("--")
-            build_cmd.extend(shlex.split(build_args))
+            cmake_cmd.append(build_args)
+        if build_target:
+            cmake_cmd.append(build_target)
+        try:
+            result = subprocess.run(cmake_cmd, capture_output=True, text=True, timeout=10, check=False)
+            output = result.stdout + (result.stderr if result.stderr else "")
+            return output.strip() if result.returncode == 0 else f"获取帮助失败：{output}"
+        except FileNotFoundError:
+            return "错误：找不到 cmake 命令。"
+        except Exception as e:
+            return f"执行出错：{e}"
+    elif action == "build":
+        # 确定构建目录
+        if not build_dir:
+            build_dir = os.path.join(source_dir, "build")
+        os.makedirs(build_dir, exist_ok=True)
 
-        result_build = subprocess.run(
-            build_cmd,
-            cwd=build_dir,
-            capture_output=True,
-            text=True,
-            timeout=timeout // 2,
-            check=False
-        )
-        output += "\n\n=== Build Output ===\n" + result_build.stdout
-        if result_build.stderr:
-            output += "\n" + result_build.stderr
-        if result_build.returncode != 0:
-            output = f"Build failed (return code {result_build.returncode}):\n{output}"
-        return output.strip()
+        # 检查源目录是否存在
+        if not os.path.isdir(source_dir):
+            return f"Error: Source directory '{source_dir}' does not exist."
 
-    except subprocess.TimeoutExpired:
-        return f"CMake build timed out after {timeout} seconds."
-    except FileNotFoundError:
-        return "CMake command not found. Please ensure CMake is installed and in PATH."
-    except Exception as e:
-        return f"Unexpected error during CMake build: {e}"
+        # ---- 第一步：cmake 配置 ----
+        cmake_cmd = ["cmake", source_dir]
+        if generator:
+            cmake_cmd.extend(["-G", generator])
+        if cmake_options:
+            cmake_cmd.extend(shlex.split(cmake_options))
+
+        try:
+            # 运行 cmake
+            result_cmake = subprocess.run(
+                cmake_cmd,
+                cwd=build_dir,
+                capture_output=True,
+                text=True,
+                timeout=timeout // 2,  # 分配一半时间给 cmake
+                check=False
+            )
+            output = "=== CMake Output ===\n" + result_cmake.stdout
+            if result_cmake.stderr:
+                output += "\n" + result_cmake.stderr
+            if result_cmake.returncode != 0:
+                return f"CMake configuration failed (return code {result_cmake.returncode}):\n{output}"
+
+            # ---- 第二步：构建 ----
+            # 检测使用什么构建工具（基于生成器，但简单起见，假设 make 或 ninja）
+            # 这里简化：直接调用 cmake --build
+            build_cmd = ["cmake", "--build", "."]
+            if build_target:
+                build_cmd.extend(["--target", build_target])
+            if build_args:
+                # -- 之后传递参数给构建工具
+                build_cmd.append("--")
+                build_cmd.extend(shlex.split(build_args))
+
+            result_build = subprocess.run(
+                build_cmd,
+                cwd=build_dir,
+                capture_output=True,
+                text=True,
+                timeout=timeout // 2,
+                check=False
+            )
+            output += "\n\n=== Build Output ===\n" + result_build.stdout
+            if result_build.stderr:
+                output += "\n" + result_build.stderr
+            if result_build.returncode != 0:
+                output = f"Build failed (return code {result_build.returncode}):\n{output}"
+            return output.strip()
+
+        except subprocess.TimeoutExpired:
+            return f"CMake build timed out after {timeout} seconds."
+        except FileNotFoundError:
+            return "CMake command not found. Please ensure CMake is installed and in PATH."
+        except Exception as e:
+            return f"Unexpected error during CMake build: {e}"
+    else:
+        return f"错误：未知操作 {action}。"
