@@ -86,7 +86,7 @@ tool_def = {
                     "default": "zip"
                 }
             },
-            "required": ["action", "path"]
+            "required": ["action"]
         }
     }
 }

@@ -12,6 +12,7 @@ import queue
 import shlex
 import threading
 import subprocess
+import locale
 from typing import Dict, Optional, Any, List
 
 # 全局会话存储（用于调试会话）
@@ -89,19 +90,38 @@ tool_def = {
     }
 }
 
-def _run_command(cmd: List[str], timeout: float = 30.0, capture_output: bool = True) -> str:
+def _decode_bytes(data: bytes) -> str:
+    """尝试多种编码严格解码，成功则返回；全部失败则使用 UTF-8 并替换无法解析的字符"""
+    if not data:
+        return ""
+    if isinstance(data, str):
+        return data
+    encodings = ['gb2312', 'gbk', locale.getpreferredencoding()]
+    for enc in encodings:
+        try:
+            return data.decode(enc)
+        except UnicodeDecodeError:
+            continue
+    return data.decode('utf-8', errors='replace')
+
+def _run_command(cmd: List[str], timeout: float = 30.0, capture_output: bool = True, env: Optional[Dict] = None) -> str:
     """运行命令并返回输出"""
     try:
+        if env is not None:
+            full_env = os.environ.copy()
+            full_env.update(env)
+        else:
+            full_env = None
         result = subprocess.run(
             cmd,
             capture_output=capture_output,
-            text=True,
-            encoding='utf-8',
+            text=False,
             errors='replace',
             timeout=timeout,
-            check=False
+            check=False,
+            env=full_env
         )
-        output = result.stdout
+        output = _decode_bytes(result.stdout)
         if result.stderr:
             if output:
                 output += "\n" + result.stderr
@@ -199,10 +219,7 @@ def _collect_output(q: queue.Queue, timeout: float) -> str:
         if stream == 'EOF':
             lines.append("[进程已结束]")
             continue
-        try:
-            text = data.decode('utf-8', errors='replace')
-        except:
-            text = str(data)
+        text = _decode_bytes(data)
         lines.append(f"[{stream}] {text.rstrip()}")
     return "\n".join(lines)
 

@@ -240,7 +240,6 @@ def main():
     # 创建新会话文件
     now_session_file = get_session_filename()
     history = load_history(now_session_file)  # 通常为空，但若文件已存在则加载
-    print(f"会话将保存至: {now_session_file}")
 
     # 加载关键信息
     key_info = load_key_info()
@@ -257,6 +256,9 @@ def main():
         # 获取用户输入
         user_input_or_cmd = get_multiline_input()
         if user_input_or_cmd in (":exit", ":quit"):
+            # 退出时保存当前会话所有历史消息到文件
+            if len(history)>0:
+                save_history(now_session_file, history)
             print("再见！")
             break
         elif user_input_or_cmd == ":clean":
@@ -376,6 +378,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    # 退出时保存当前会话所有历史消息到文件
-    if len(history)>0:
-        save_history(now_session_file, history)

@@ -10,6 +10,7 @@ import shlex
 import os
 import platform
 from typing import Optional
+import locale
 
 # 工具定义（OpenAI 格式）
 tool_def = {
@@ -55,6 +56,21 @@ tool_def = {
         }
     }
 }
+
+
+def _decode_bytes(data: bytes) -> str:
+    """尝试多种编码严格解码，成功则返回；全部失败则使用 UTF-8 并替换无法解析的字符"""
+    if not data:
+        return ""
+    if isinstance(data, str):
+        return data
+    encodings = ['gb2312', 'gbk', locale.getpreferredencoding()]
+    for enc in encodings:
+        try:
+            return data.decode(enc)
+        except UnicodeDecodeError:
+            continue
+    return data.decode('utf-8', errors='replace')
 
 def execute(action: str = "compile", compiler: Optional[str] = "g++", source: Optional[str] = None,
             output: Optional[str] = None, options: Optional[str] = "", timeout: int = 60) -> str:
@@ -116,14 +132,12 @@ def execute(action: str = "compile", compiler: Optional[str] = "g++", source: Op
             result = subprocess.run(
                 cmd,
                 capture_output=True,
-                text=True,
-                encoding='utf-8', # 强制使用UTF-8解码
-                errors='replace', # 无法解码的字符替换
+                text=False,
+                errors='replace',
                 timeout=timeout,
-                check=False  # 不抛出异常
+                check=False,
             )
-            # 合并 stdout 和 stderr 作为结果
-            output_text = result.stdout
+            output = _decode_bytes(result.stdout)
             if result.stderr:
                 if output_text:
                     output_text += "\n" + result.stderr
