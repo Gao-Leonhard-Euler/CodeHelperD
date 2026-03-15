@@ -4,12 +4,12 @@ import sys
 import time
 import datetime
 import traceback
+import math
 from pathlib import Path
 from openai import OpenAI
 from typing import List, Dict, Any, Optional
 import tiktoken
 history: List[Dict[str, Any]] = []
-now_session_file: str
 
 # ==================== 路径管理 ====================
 
@@ -112,7 +112,18 @@ def load_prompt() -> str:
     return ""
 
 # ==================== Token 计数和长度预警 ====================
-MAX_TOKENS = 102400
+def read_max_tokens(lenfile: str = 'MAX_TOKENS.txt') -> int:
+    """读取模型上下文最大 token 数"""
+    try:
+        with open(os.path.join(BASE_DIR, lenfile), 'r', encoding='utf-8') as f:
+            return int(f.readline().strip())
+    except FileNotFoundError:
+        print(f"文件未找到: {lenfile}")
+    except ValueError:
+        print("无法将内容转换为数字")
+    except Exception as e:
+        print(f"发生错误: {e}")
+    return 131072
 
 def count_tokens(messages: List[Dict[str, Any]]) -> int:
     """估算消息列表的 token 数"""
@@ -144,7 +155,7 @@ def save_history_tool(keep_last: int = 0, filename: Optional[str] = None) -> str
     将历史记录中除最近 keep_last 条之外的消息保存到文件，并从内存中移除。
     返回保存的文件名。
     """
-    global history,now_session_file
+    global history
     if keep_last < 0:
         keep_last = 0
     total = len(history)
@@ -156,7 +167,7 @@ def save_history_tool(keep_last: int = 0, filename: Optional[str] = None) -> str
     
     # 生成文件名
     if filename is None:
-        filename = now_session_file
+        filename = get_session_filename()
     else:
         # 确保路径在 memory 目录下
         if not filename.startswith(MEMORY_DIR):
@@ -169,7 +180,6 @@ def save_history_tool(keep_last: int = 0, filename: Optional[str] = None) -> str
     
     # 从 history 中移除已保存的消息
     history = history[save_count:]
-    now_session_file=get_session_filename()
     return f"已保存 {save_count} 条消息到 {filename}"
 
 # ==================== 历史记录管理 ====================
@@ -184,6 +194,7 @@ def load_history(session_file: str) -> List[Dict[str, Any]]:
                     return data
         except Exception as e:
             print(f"历史记录加载失败: {e}，将新建会话。")
+    print(f"历史记录不存在，将新建会话。")
     return []
 
 def save_history(session_file: str, messages: List[Dict[str, Any]]):
@@ -229,7 +240,7 @@ def get_multiline_input() -> str:
 # ==================== 主对话循环 ====================
 
 def main():
-    global history,now_session_file
+    global history
     config = load_config()
     load_history_config()
     client = OpenAI(
@@ -237,15 +248,13 @@ def main():
         base_url=config["base_url"]
     )
 
+    TOKENS = read_max_tokens()
+    MAX_TOKENS = int(math.floor(0.8*TOKENS)-256)
+    print(f'模型上下文长度：{TOKENS}；对话预警长度：{MAX_TOKENS}')
     # 创建新会话文件
-    now_session_file = get_session_filename()
-    history = load_history(now_session_file)  # 通常为空，但若文件已存在则加载
+    history = load_history(os.path.join(MEMORY_DIR, 'last.json'))  # 通常为空，但若文件已存在则加载
 
-    # 加载关键信息
-    key_info = load_key_info()
-    if key_info:
-        print("已加载关键信息。")
-    
+    # 加载prompt
     prompt = load_prompt()
     if prompt:
         print("已加载系统设定。")
@@ -257,8 +266,7 @@ def main():
         user_input_or_cmd = get_multiline_input()
         if user_input_or_cmd in (":exit", ":quit"):
             # 退出时保存当前会话所有历史消息到文件
-            if len(history)>0:
-                save_history(now_session_file, history)
+            save_history(os.path.join(MEMORY_DIR, 'last.json'), history)
             print("再见！")
             break
         elif user_input_or_cmd == ":clean":
@@ -286,7 +294,7 @@ def main():
         # 构建消息列表后，添加 token 检查
         current_tokens = count_tokens(messages_for_api)
         if current_tokens > MAX_TOKENS:
-            warning_msg = f"警告：当前对话长度 {current_tokens} 过长，考虑保存部分历史记录到文件。"
+            warning_msg = f"警告：对话长度过长({current_tokens}/{TOKENS})，考虑保存部分历史记录到文件。"
             messages_for_api.append({"role": "system", "content": warning_msg})
 
         # 工具调用循环
@@ -360,16 +368,18 @@ def main():
                         "content": str(result)
                     }
                     history.append(tool_message)
-                    messages_for_api.append(tool_message)
 
                 # 重新构建 messages_for_api 以保证一致性
                 messages_for_api = []
+                if prompt:
+                    messages_for_api.append({"role": "system", "content": prompt})
+                key_info = load_key_info()
                 if key_info:
                     messages_for_api.append({"role": "system", "content": f"Key information:\n{key_info}"})
                 messages_for_api.extend(history)
                 current_tokens = count_tokens(messages_for_api)
                 if current_tokens > MAX_TOKENS:
-                    warning_msg = f"警告：对话长度 {current_tokens} 过长，考虑保存部分历史记录到文件。"
+                    warning_msg = f"警告：对话长度过长({current_tokens}/{TOKENS})，考虑保存部分历史记录到文件。"
                     messages_for_api.append({"role": "system", "content": warning_msg})
             else:
                 turn_finished = True

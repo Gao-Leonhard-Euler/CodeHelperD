@@ -31,13 +31,17 @@ CodeHelperD 是一个基于 API 的智能代码助手 Agent，它能够理解自
 
 1. 克隆或下载本项目到本地。
 2. 进入项目目录：
+
    ```bash
-   cd CodeHelperD
+      cd CodeHelperD
    ```
+
 3. 安装 Python 依赖：
+
    ```bash
-   pip install -r requirements.txt
+      pip install -r requirements.txt
    ```
+
 4. （可选）如果需要编译和调试 C++，请确保系统已安装 `gdb`, `gcc` 和 `g++`。
 
 ### 依赖列表
@@ -95,15 +99,16 @@ python agent.py
 
 ## 项目文件结构
 
-```
+```plaintext
 CodeHelperD/
-├── agent.py                      # 主程序入口
-├── config.json                   # 主 API 配置
+├── agent.py                       # 主程序入口
+├── config.json                    # 主 API 配置
 ├── history_config.json            # 摘要专用 API 配置
 ├── prompt.txt                     # 可选的系统设定
-├── length.txt                     # token 预警阈值（默认 81920）
+├── MAX_TOKENS.txt                 # 模型最大 token 长度
 ├── memory/                        # 存储目录
 │   ├── key_info.txt               # 长期关键信息
+│   ├── last.json                  # 上次会话历史（加载）
 │   ├── session_*.json             # 会话历史
 │   ├── session_*.txt              # 会话摘要
 ├── tools/                         # 工具模块
@@ -133,11 +138,10 @@ CodeHelperD/
 ## 注意事项
 
 1. **API Key**：请确保 API Key 有效且有足够的额度。
-2. **系统工具依赖**：部分工具（如 gcc、gdb、make、cmake）需要系统已安装相应程序，并加入 PATH。
+2. **系统工具依赖**：部分工具（如 gcc、gdb、make、cmake、python、java、javac、jdb）需要系统已安装相应程序，并加入 PATH。
 3. **路径安全**：Agent 有读、写、执行文件的权限，可以考虑在更安全的环境下运行或监视 Agent 的行为。
-4. **交互式会话**：在交互式工具（如 debugger、executor）中，输入 `exit_interact` 可退出当前交互模式（返回 Agent 主对话）。
-5. **Token 预警**：当对话长度超过 `length.txt` 中的阈值时，Agent 会收到系统提示，可主动调用 `history_save` 存档旧消息。
-6. **并发限制**：当前为单线程设计，不支持同时处理多个用户请求。
+4. **Token 预警**：当对话长度超过 `MAX_TOKENS.txt` 中的 80% 的阈值时，Agent 会收到系统提示，可主动调用 `history_save` 存档旧消息。如果使用非 deepseekV3.2 模型，则可能需要修改此文件。
+5. **并发限制**：当前为单线程设计，不支持同时处理多个用户请求。
 
 ## License
 

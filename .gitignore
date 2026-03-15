@@ -6,3 +6,4 @@ history_config.json
 *.pyc
 session_*.json
 session_*.txt
+last.json

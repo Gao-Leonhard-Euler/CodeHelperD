@@ -33,11 +33,11 @@ tool_def = {
                 },
                 "start_time": {
                     "type": "string",
-                    "description": "起始时间戳，格式 YYYYMMDD_hhmmss。用于限定会话文件的时间范围，不提供则默认到最早一条"
+                    "description": "起始时间戳，格式 YYYYMMDD_hhmmss。用于限定会话文件的保存时间范围，不提供则默认到最早一条"
                 },
                 "end_time": {
                     "type": "string",
-                    "description": "结束时间戳，格式 YYYYMMDD_hhmmss。用于限定会话文件的时间范围，不提供则默认到最晚一条"
+                    "description": "结束时间戳，格式 YYYYMMDD_hhmmss。用于限定会话文件的保存时间范围，不提供则默认到最晚一条"
                 },
                 "roles": {
                     "type": "string",

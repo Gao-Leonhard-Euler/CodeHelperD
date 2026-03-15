@@ -60,22 +60,25 @@ def _format_message_for_summary(msg: Dict[str, Any]) -> Optional[str]:
     if role == "user":
         return f"[User:\n{msg.get('content', '')}\n]"
     elif role == "assistant":
+        lines = []
+        if "reasoning_content" in msg and msg["reasoning_content"]:
+            lines.append(f"[Agent reasoning:\n{msg['reasoning_content']}\n]")
         # 助手消息：若有 tool_calls 则视为工具调用，否则为普通回复
         if msg.get("tool_calls"):
             # 多个工具调用，每个单独一行
-            lines = []
             for tc in msg["tool_calls"]:
                 func = tc.get("function", {})
                 name = func.get("name", "")
                 args = func.get("arguments", "{}")
                 lines.append(f"Tool:\n{name}({args})")
-            return "\n".join(lines)
         else:
-            # 普通回复，忽略 reasoning_content
+            # 普通回复
             content = msg.get('content', '')
             if content:
-                return f"[Agent:\n{content}\n]"
-            return None
+                lines.append("[Agent:\n{content}\n]")
+        if lines:
+            return "\n".join(lines)
+        return None
     elif role == "tool":
         # 工具结果
         content = msg.get('content', '')
@@ -104,7 +107,7 @@ def _call_llm_to_summarize(text: str, config: Dict[str, str]) -> str:
         api_key=config["api_key"],
         base_url=config["base_url"]
     )
-    prompt = f"请对以下用户与AI Agent的对话内容进行简短、全面、清晰、准确的总结摘要，高效提取关键信息，如目的重点、关键操作、重要决策等，忽略无关细节，不添加未出现信息：\n\n{text}"
+    prompt = f"你是一位专业的对话摘要助手。请对以下用户与AI Agent的对话内容进行简短、全面、清晰、准确的总结摘要，高效提取关键信息，如核心主题、目的重点、关键操作、重要决策、待办事项等，忽略无关内容，忠于原文，不添加未出现信息，不捏造事实：\n\n{text}"
     try:
         response = client.chat.completions.create(
             model=config["model"],
