@@ -18,7 +18,7 @@ tool_def = {
     "type": "function",
     "function": {
         "name": "history_search",
-        "description": "搜索或查询聊天记录。支持关键字搜索、消息计数、获取指定消息。",
+        "description": "搜索或查询已保存的聊天记录文件。支持关键字搜索、消息计数、获取指定消息。",
         "parameters": {
             "type": "object",
             "properties": {

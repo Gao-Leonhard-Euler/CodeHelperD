@@ -159,10 +159,13 @@ def save_history_tool(keep_last: int = 0, filename: Optional[str] = None) -> str
     if keep_last < 0:
         keep_last = 0
     total = len(history)
+    keep_last=keep_last+1
     if total <= keep_last:
         return "没有需要保存的消息"
     # 要保存的消息索引范围 [0, total-keep_last-1]
     save_count = total - keep_last
+    if save_count<total and history[save_count]['role']=='tool':
+        save_count=save_count-1
     to_save = history[:save_count]
     
     # 生成文件名
@@ -294,7 +297,7 @@ def main():
         # 构建消息列表后，添加 token 检查
         current_tokens = count_tokens(messages_for_api)
         if current_tokens > MAX_TOKENS:
-            warning_msg = f"警告：对话长度过长({current_tokens}/{TOKENS})，考虑保存部分历史记录到文件。"
+            warning_msg = f"警告：对话长度过长({current_tokens}/{TOKENS})，考虑调用工具保存部分聊天记录到文件。"
             messages_for_api.append({"role": "system", "content": warning_msg})
 
         # 工具调用循环
@@ -379,7 +382,7 @@ def main():
                 messages_for_api.extend(history)
                 current_tokens = count_tokens(messages_for_api)
                 if current_tokens > MAX_TOKENS:
-                    warning_msg = f"警告：对话长度过长({current_tokens}/{TOKENS})，考虑保存部分历史记录到文件。"
+                    warning_msg = f"警告：对话长度过长({current_tokens}/{TOKENS})，考虑调用工具保存部分聊天记录到文件。"
                     messages_for_api.append({"role": "system", "content": warning_msg})
             else:
                 turn_finished = True

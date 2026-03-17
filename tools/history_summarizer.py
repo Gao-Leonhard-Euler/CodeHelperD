@@ -18,7 +18,7 @@ tool_def = {
     "type": "function",
     "function": {
         "name": "history_summarize",
-        "description": "获取或生成指定会话的摘要。传入会话标识（时间戳'YYYYMMDD_hhmmss'或文件前缀名'session_YYYYMMDD_hhmmss'）。"
+        "description": "获取或生成指定会话文件的摘要。传入会话标识（时间戳'YYYYMMDD_hhmmss'或文件前缀名'session_YYYYMMDD_hhmmss'）。"
                        "若摘要文件已存在则直接读取，否则从聊天记录生成并保存。",
         "parameters": {
             "type": "object",
