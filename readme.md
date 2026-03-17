@@ -46,9 +46,10 @@ CodeHelperD 是一个基于 API 的智能代码助手 Agent，它能够理解自
 
 ### 依赖列表
 
-- `openai>=1.0.0`：调用 DeepSeek API
+- `openai>=1.0.0`：调用 DeepSeek（或其它LLM模型） API
 - `tiktoken>=0.5.0`：用于估算 token 数量
 - `virtualenv>=20.0.0`: 用于创建和管理 python 虚拟环境
+- `PyMuPDF>=1.23.0`: 用于读取 PDF 文件
 
 ## 配置说明
 
@@ -96,6 +97,7 @@ python agent.py
 | `venv_manager` | 管理 Python 虚拟环境，支持在虚拟环境中执行代码。 |
 | `python_pdb` | 使用 pdb 调试 Python 代码。 |
 | `java_debugger` | 编译和调试 Java 代码。 |
+| `read_pdf` | 读取 PDF 文件中的文本内容。 |
 
 ## 项目文件结构
 
@@ -130,6 +132,7 @@ CodeHelperD/
 │   ├── python_pdb.py
 │   ├── venv_manager.py
 │   ├── java_debugger.py
+│   ├── read_pdf.py
 │   └── utils/
 │       └── cpp_bridge/            # C++ 实现的工具（可扩展）
 └── requirements.txt               # Python 依赖

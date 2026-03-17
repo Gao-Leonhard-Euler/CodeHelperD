@@ -47,7 +47,7 @@ tool_def = {
                 },
                 "timeout_per_step": {
                     "type": "number",
-                    "description": "每次交互的默认超时时间（秒），默认 2",
+                    "description": "每次交互的默认超时时间（秒），默认 2.0",
                     "default": 2.0
                 },
                 # send 参数
@@ -247,7 +247,6 @@ def execute(action: str,
         # 发送输入
         try:
             if input_data is not None:
-                # 确保输入以换行符结尾？由调用者决定是否加换行
                 process.stdin.write(input_data.encode('utf-8', errors='replace'))
                 process.stdin.flush()
         except Exception as e:
@@ -319,18 +318,20 @@ def _collect_output(session: Dict[str, Any], timeout: float = 0.1) -> str:
     q = session['queue']
     items = []
     start = time.time()
-    # 先非阻塞获取已有
     while True:
-        try:
-            items.append(q.get_nowait())
-        except queue.Empty:
+        remaining = timeout - (time.time() - start)
+        if remaining<0:
             break
-    # 再等待一点新数据
-    try:
-        item = q.get(timeout=timeout)
-        items.append(item)
-    except queue.Empty:
-        pass
+        try:
+            item = q.get_nowait()
+            items.append(item)
+        except queue.Empty:
+            try:
+                # 收集新输出直到超时
+                item = q.get(timeout=remaining)
+                items.append(item)
+            except queue.Empty:
+                break
     if not items:
         return ""
     lines = []

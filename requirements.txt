@@ -1,3 +1,4 @@
 openai>=1.0.0
 tiktoken>=0.5.0
 virtualenv>=20.0.0
+PyMuPDF>=1.23.0
