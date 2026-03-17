@@ -96,8 +96,9 @@ def execute(action: str, file_path: str, start_page: int = None, end_page: int =
 
     elif action == "extract_text":
         # 确定要读取的页码范围
-        if end_page<start_page:
-            start_page,end_page=end_page,start_page
+        if (end_page is not None) and (start_page is not None):
+            if end_page<start_page:
+                start_page,end_page=end_page,start_page
         if end_page is not None:
             end_page = min(end_page, total_pages)
         else:
