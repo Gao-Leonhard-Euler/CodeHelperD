@@ -21,15 +21,20 @@ tool_def = {
                 "action": {
                     "type": "string",
                     "enum": ["extract_text", "get_page_count", "get_text_stats"],
-                    "description": "操作类型：extract_text-提取文本内容；get_page_count-获取PDF页数；get_text_stats-获取页数、字符数、单词数统计"
+                    "description": "操作类型：extract_text-提取文本内容(参数使用1-based)；get_page_count-获取PDF页数；get_text_stats-获取页数、字符数、单词数统计"
                 },
                 "file_path": {
                     "type": "string",
                     "description": "要读取的 PDF 文件的完整路径，例如 '/home/user/docs/article.pdf'"
                 },
-                "max_pages": {
+                "start_page": {
                     "type": "integer",
-                    "description": "仅对 extract_text 有效：最多读取的页数（从第一页开始）。默认读取全部。",
+                    "description": "仅对 extract_text 有效：读取的第一页的编号。默认读取全部。",
+                    "minimum": 1
+                },
+                "end_page": {
+                    "type": "integer",
+                    "description": "仅对 extract_text 有效：读取的最后一页的编号。默认读取全部。",
                     "minimum": 1
                 }
             },
@@ -39,7 +44,7 @@ tool_def = {
 }
 
 
-def execute(action: str, file_path: str, max_pages: int = None) -> str:
+def execute(action: str, file_path: str, start_page: int = None, end_page: int = None) -> str:
     """
     执行 PDF 操作。
     :param action: 操作类型
@@ -91,13 +96,18 @@ def execute(action: str, file_path: str, max_pages: int = None) -> str:
 
     elif action == "extract_text":
         # 确定要读取的页码范围
-        if max_pages is not None:
-            pages_to_read = min(max_pages, total_pages)
+        if end_page<start_page:
+            start_page,end_page=end_page,start_page
+        if end_page is not None:
+            end_page = min(end_page, total_pages)
         else:
-            pages_to_read = total_pages
-
+            end_page = total_pages
+        if start_page is not None:
+            start_page=min(start_page-1,total_pages-1)
+        else:
+            start_page=0
         text_parts = []
-        for page_num in range(pages_to_read):
+        for page_num in range(start_page,end_page):
             page = doc.load_page(page_num)
             page_text = page.get_text()
             if page_text:
