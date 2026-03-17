@@ -26,6 +26,10 @@ tool_def = {
 
 def execute(keep_last: int = 0) -> str:
     """调用 agent 的保存函数（延迟导入）"""
-    import importlib
-    agent = importlib.import_module('agent')
-    return agent.save_history_tool(keep_last)
+    import importlib,sys
+    main_module = sys.modules.get('__main__')
+    if main_module is None:
+        return "错误：无法获取主模块"
+    if not hasattr(main_module, 'save_history_tool'):
+        return "错误：主模块中没有 save_history_tool 函数"
+    return main_module.save_history_tool(keep_last)
