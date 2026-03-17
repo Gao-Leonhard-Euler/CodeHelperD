@@ -142,15 +142,8 @@ def count_tokens(messages: List[Dict[str, Any]]) -> int:
                 total += len(encoding.encode(args))
     return total
 
-# ==================== 当前时间生成工具 ====================
-
-def get_session_filename() -> str:
-    """生成基于时间戳的会话文件名"""
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    return os.path.join(MEMORY_DIR, f"session_{timestamp}.json")
-
 # ==================== 历史记录保存工具 ====================
-def save_history_tool(keep_last: int = 0, filename: Optional[str] = None) -> str:
+def save_history_tool(keep_last: int = 0) -> str:
     """
     将历史记录中除最近 keep_last 条之外的消息保存到文件，并从内存中移除。
     返回保存的文件名。
@@ -169,21 +162,16 @@ def save_history_tool(keep_last: int = 0, filename: Optional[str] = None) -> str
     to_save = history[:save_count]
     
     # 生成文件名
-    if filename is None:
-        filename = get_session_filename()
-    else:
-        # 确保路径在 memory 目录下
-        if not filename.startswith(MEMORY_DIR):
-            filename = os.path.join(MEMORY_DIR, filename)
-    
+    filenowtime = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"session_{filenowtime}.json"
     # 确保 memory 目录存在
     Path(MEMORY_DIR).mkdir(exist_ok=True)
-    with open(filename, "w", encoding="utf-8") as f:
+    with open(os.path.join(MEMORY_DIR, filename), "w", encoding="utf-8") as f:
         json.dump(to_save, f, indent=2, ensure_ascii=False)
     
     # 从 history 中移除已保存的消息
     history = history[save_count:]
-    return f"已保存 {save_count} 条消息到 {filename}"
+    return f"已保存 {save_count} 条消息，时间戳 {filenowtime}"
 
 # ==================== 历史记录管理 ====================
 
