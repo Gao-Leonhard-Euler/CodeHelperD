@@ -40,11 +40,11 @@ tool_def = {
                 },
                 "output": {
                     "type": "string",
-                    "description": "输出可执行文件路径（可选，若不指定则自动生成默认名称）"
+                    "description": "输出可执行文件路径（可选，不指定则生成默认名称）"
                 },
                 "options": {
                     "type": "string",
-                    "description": "额外的编译选项，如 '-O2 -Wall -lm'，注意用引号包围"
+                    "description": "额外的编译选项，如 '-O2 -Wall -lm'，用引号包围"
                 },
                 "timeout": {
                     "type": "integer",

@@ -23,7 +23,7 @@ tool_def = {
     "type": "function",
     "function": {
         "name": "python_executor",
-        "description": "在当前主环境中执行 Python 代码。支持一次性执行（run）和交互式解释器（interact）。",
+        "description": "在当前主环境中运行 Python 代码。",
         "parameters": {
             "type": "object",
             "properties": {

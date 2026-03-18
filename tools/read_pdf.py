@@ -14,18 +14,18 @@ tool_def = {
     "type": "function",
     "function": {
         "name": "read_pdf",
-        "description": "读取 PDF 文件并执行指定操作。支持提取文本、获取页数、获取文字统计信息。如果 PDF 是扫描件且未经过 OCR，可能无法提取文本。",
+        "description": "读取 PDF 文件。支持提取文本、获取页数、获取字数，不支持图像。",
         "parameters": {
             "type": "object",
             "properties": {
                 "action": {
                     "type": "string",
                     "enum": ["extract_text", "get_page_count", "get_text_stats"],
-                    "description": "操作类型：extract_text-提取文本内容(参数使用1-based)；get_page_count-获取PDF页数；get_text_stats-获取页数、字符数、单词数统计"
+                    "description": "操作类型：extract_text-提取文本内容(1-based)；get_page_count-获取PDF页数；get_text_stats-获取页数、字符数、单词数统计"
                 },
                 "file_path": {
                     "type": "string",
-                    "description": "要读取的 PDF 文件的完整路径，例如 '/home/user/docs/article.pdf'"
+                    "description": "要读取的 PDF 文件的完整路径，例如 '/home/user/article.pdf'"
                 },
                 "start_page": {
                     "type": "integer",
@@ -81,18 +81,14 @@ def execute(action: str, file_path: str, start_page: int = None, end_page: int =
         return f"PDF 总页数：{total_pages}"
 
     elif action == "get_text_stats":
-        # 统计所有页的字符数和单词数
+        # 统计所有页的字符数
         char_count = 0
-        word_count = 0
         for page_num in range(total_pages):
             page = doc.load_page(page_num)
             text = page.get_text()
             char_count += len(text)
-            # 简单单词统计：按空白分割（粗略，适用于英文等）
-            words = text.split()
-            word_count += len(words)
         doc.close()
-        return f"PDF 统计信息：页数 {total_pages}，字符数 {char_count}，单词数 {word_count}"
+        return f"PDF 统计信息：页数 {total_pages}，字符数 {char_count}"
 
     elif action == "extract_text":
         # 确定要读取的页码范围

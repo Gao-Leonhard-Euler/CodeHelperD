@@ -18,7 +18,7 @@ tool_def = {
             "properties": {
                 "file_path": {
                     "type": "string",
-                    "description": "要操作的文件路径"
+                    "description": "操作的文件路径"
                 },
                 "mode": {
                     "type": "string",

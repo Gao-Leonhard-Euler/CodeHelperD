@@ -140,7 +140,7 @@ def ds_get_tokenizer():
         )
     return _ds_tokenizer
 
-def count_tokens_DS(messages: List[Dict[str, Any]]) -> int:
+def count_tokens_DS(messages: List[Dict[str, Any]],tools: List[Dict[str, Any]]=None) -> int:
     """估算消息列表的 token 数"""
     tokenizer = ds_get_tokenizer()
     total = 0
@@ -158,9 +158,11 @@ def count_tokens_DS(messages: List[Dict[str, Any]]) -> int:
                 args = func.get("arguments", "")
                 total += len(tokenizer.encode(name, add_special_tokens=False))
                 total += len(tokenizer.encode(args, add_special_tokens=False))
+    if tools:
+        total+=len(tokenizer.encode(json.dumps(tools, ensure_ascii=False), add_special_tokens=False))
     return total
 
-def count_tokens_tik(messages: List[Dict[str, Any]], encode: str = "cl100k_base") -> int:
+def count_tokens_tik(messages: List[Dict[str, Any]],tools: List[Dict[str, Any]]=None, encode: str = "cl100k_base") -> int:
     """估算消息列表的 token 数"""
     encoding = tiktoken.get_encoding(encode)
     total = 0
@@ -178,10 +180,12 @@ def count_tokens_tik(messages: List[Dict[str, Any]], encode: str = "cl100k_base"
                 args = func.get("arguments", "")
                 total += len(encoding.encode(name))
                 total += len(encoding.encode(args))
+    if tools:
+        total+=len(encoding.encode(json.dumps(tools, ensure_ascii=False)))
     return total
 
-def count_tokens(messages: List[Dict[str, Any]]) -> int:
-    return count_tokens_DS(messages)
+def count_tokens(messages: List[Dict[str, Any]],tools: List[Dict[str, Any]]=None) -> int:
+    return count_tokens_DS(messages,tools)
 
 # ==================== 历史记录保存工具 ====================
 def save_history_tool(keep_last: int = 0) -> str:
@@ -289,9 +293,9 @@ def main():
         base_url=config["base_url"]
     )
 
-    TOKENS = int(read_max_tokens()-64)
-    WARNING_TOKENS = int(math.floor(0.75*TOKENS)-64)
-    ERROR_TOKENS = int(math.floor(0.875*TOKENS)-64)
+    TOKENS = int(read_max_tokens()-512)
+    WARNING_TOKENS = int(math.floor(0.75*TOKENS)-512)
+    ERROR_TOKENS = int(math.floor(0.875*TOKENS)-512)
     print(f'模型上下文长度：{TOKENS}；对话预警长度：{WARNING_TOKENS}')
     # 创建新会话文件
     history = load_history(os.path.join(MEMORY_DIR, 'last.json'))  # 通常为空，但若文件已存在则加载
@@ -334,7 +338,7 @@ def main():
         history.append({"role": "user", "content": user_input})
 
         # 构建消息列表后，添加 token 检查
-        current_tokens = count_tokens(messages_for_api)
+        current_tokens = count_tokens(messages_for_api,tools_list)
         try_save = 12
         while current_tokens > TOKENS:
             save_result = force_save(try_save)
@@ -350,7 +354,7 @@ def main():
             if save_result:
                 history.insert(0, {"role": "system", "content": save_result})
             messages_for_api.extend(history)
-            current_tokens = count_tokens(messages_for_api)
+            current_tokens = count_tokens(messages_for_api,tools_list)
         if current_tokens > ERROR_TOKENS:
             warning_msg = f"警告：对话长度严重过长({current_tokens}/{TOKENS})，尽快调用工具保存部分聊天记录到文件。"
             messages_for_api.append({"role": "system", "content": warning_msg})
@@ -440,7 +444,7 @@ def main():
                 messages_for_api.extend(history)
 
                 # 构建消息列表后，添加 token 检查
-                current_tokens = count_tokens(messages_for_api)
+                current_tokens = count_tokens(messages_for_api,tools_list)
                 try_save = 12
                 while current_tokens > TOKENS:
                     save_result = force_save(try_save)
@@ -456,7 +460,7 @@ def main():
                     if save_result:
                         history.insert(0, {"role": "system", "content": save_result})
                     messages_for_api.extend(history)
-                    current_tokens = count_tokens(messages_for_api)
+                    current_tokens = count_tokens(messages_for_api,tools_list)
                 if current_tokens > ERROR_TOKENS:
                     warning_msg = f"警告：对话长度严重过长({current_tokens}/{TOKENS})，尽快调用工具保存部分聊天记录到文件。"
                     messages_for_api.append({"role": "system", "content": warning_msg})

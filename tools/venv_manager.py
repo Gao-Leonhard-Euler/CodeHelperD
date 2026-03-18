@@ -29,7 +29,7 @@ tool_def = {
     "type": "function",
     "function": {
         "name": "venv_manager",
-        "description": "管理Python虚拟环境，支持创建、列出、删除虚拟环境，以及在虚拟环境中执行Python代码（交互式和一次性执行）。",
+        "description": "管理Python虚拟环境，支持创建、列出、删除虚拟环境，以及在虚拟环境中执行Python代码。",
         "parameters": {
             "type": "object",
             "properties": {

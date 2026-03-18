@@ -33,11 +33,11 @@ tool_def = {
                 },
                 "start_time": {
                     "type": "string",
-                    "description": "起始时间戳，格式 YYYYMMDD_hhmmss。用于限定会话文件的保存时间范围，不提供则默认到最早一条"
+                    "description": "起始时间戳，格式 YYYYMMDD_hhmmss。限定会话文件的保存时间范围，不提供则默认到最早一条"
                 },
                 "end_time": {
                     "type": "string",
-                    "description": "结束时间戳，格式 YYYYMMDD_hhmmss。用于限定会话文件的保存时间范围，不提供则默认到最晚一条"
+                    "description": "结束时间戳，格式 YYYYMMDD_hhmmss。限定会话文件的保存时间范围，不提供则默认到最晚一条"
                 },
                 "roles": {
                     "type": "string",
@@ -57,21 +57,21 @@ tool_def = {
                 # search 专用
                 "keyword": {
                     "type": "string",
-                    "description": "要搜索的关键字（用于 action=search）"
+                    "description": "要搜索的关键字（用于 search）"
                 },
                 # count 专用
                 "count_role": {
                     "type": "string",
-                    "description": "要统计的角色（用于 action=count，若提供则只统计该角色，否则统计所有消息）"
+                    "description": "要统计的角色（用于 count，若提供则只统计该角色，否则统计所有消息）"
                 },
                 # get 专用
                 "message_start": {
                     "type": "integer",
-                    "description": "起始消息编号（从1开始，用于 action=get）"
+                    "description": "起始消息编号（从1开始，用于 get）"
                 },
                 "message_end": {
                     "type": "integer",
-                    "description": "结束消息编号（包含，用于 action=get），若不提供则只返回 message_start 单条"
+                    "description": "结束消息编号（包含，用于 get），不提供则只返回 message_start 单条"
                 }
             },
             "required": ["action"]

@@ -47,7 +47,7 @@ tool_def = {
                 },
                 "timeout_per_step": {
                     "type": "number",
-                    "description": "每次交互的默认超时时间（秒），默认 2.0",
+                    "description": "每次交互默认超时时间（秒），默认 2.0",
                     "default": 2.0
                 },
                 # send 参数
@@ -57,7 +57,7 @@ tool_def = {
                 },
                 "input_data": {
                     "type": "string",
-                    "description": "要发送给程序的输入"
+                    "description": "发送给程序的输入"
                 },
                 "timeout": {
                     "type": "number",

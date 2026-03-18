@@ -25,11 +25,11 @@ tool_def = {
                 },
                 "target": {
                     "type": "string",
-                    "description": "要构建的目标（如 all, clean, install），默认不指定则调用默认目标"
+                    "description": "要构建的目标（如 all, clean, install），默认不指定调用默认目标"
                 },
                 "directory": {
                     "type": "string",
-                    "description": "运行 make 的工作目录（包含 Makefile 的目录），默认为当前目录",
+                    "description": "运行 make 的工作目录（包含 Makefile 的目录），默认当前目录",
                     "default": "."
                 },
                 "options": {
