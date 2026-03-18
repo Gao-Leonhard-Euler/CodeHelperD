@@ -170,7 +170,7 @@ def count_tokens_tik(messages: List[Dict[str, Any]], encode: str = "cl100k_base"
             total += len(encoding.encode(content))
         reasoning = msg.get("reasoning_content", "")
         if reasoning:
-            total += len(tokenizer.encode(reasoning, add_special_tokens=False))
+            total += len(encoding.encode(reasoning))
         if msg.get("tool_calls"):
             for tc in msg["tool_calls"]:
                 func = tc.get("function", {})
@@ -181,7 +181,7 @@ def count_tokens_tik(messages: List[Dict[str, Any]], encode: str = "cl100k_base"
     return total
 
 def count_tokens(messages: List[Dict[str, Any]]) -> int:
-    return count_tokens_DS()
+    return count_tokens_DS(messages)
 
 # ==================== 历史记录保存工具 ====================
 def save_history_tool(keep_last: int = 0) -> str:
