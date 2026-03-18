@@ -173,6 +173,13 @@ def save_history_tool(keep_last: int = 0) -> str:
     history = history[save_count:]
     return f"已保存 {save_count} 条消息，时间戳 {filenowtime}"
 
+def force_save(keep_last: int = 12) -> str:
+    global history
+    from tools import history_summarizer
+    filenowtime=save_history_tool(keep_last=keep_last)
+    text=history_summarizer.execute(filenowtime)
+    return f'你之前的工作部分（已保存至聊天记录:时间戳{filenowtime}）的摘要如下:\n\n{text}'
+
 # ==================== 历史记录管理 ====================
 
 def load_history(session_file: str) -> List[Dict[str, Any]]:
@@ -240,8 +247,9 @@ def main():
     )
 
     TOKENS = read_max_tokens()
-    MAX_TOKENS = int(math.floor(0.8*TOKENS)-256)
-    print(f'模型上下文长度：{TOKENS}；对话预警长度：{MAX_TOKENS}')
+    WARNING_TOKENS = int(math.floor(0.75*TOKENS)-512)
+    ERROR_TOKENS = int(math.floor(0.875*TOKENS)-512)
+    print(f'模型上下文长度：{TOKENS}；对话预警长度：{WARNING_TOKENS}')
     # 创建新会话文件
     history = load_history(os.path.join(MEMORY_DIR, 'last.json'))  # 通常为空，但若文件已存在则加载
 
@@ -284,8 +292,25 @@ def main():
 
         # 构建消息列表后，添加 token 检查
         current_tokens = count_tokens(messages_for_api)
-        if current_tokens > MAX_TOKENS:
-            warning_msg = f"警告：对话长度过长({current_tokens}/{TOKENS})，考虑调用工具保存部分聊天记录到文件。"
+        if current_tokens > TOKENS:
+            save_result = force_save()
+            print(f"\n[触发强制保存]\n")
+            # 重新构建 messages_for_api 以反映新的 history
+            messages_for_api = []
+            if prompt:
+                messages_for_api.append({"role": "system", "content": prompt})
+            key_info = load_key_info()
+            if key_info:
+                messages_for_api.append({"role": "system", "content": f"Key information:\n{key_info}"})
+            if save_result:
+                history.insert(0, {"role": "system", "content": save_result})
+            messages_for_api.extend(history)
+            current_tokens = count_tokens(messages_for_api)
+        if current_tokens > ERROR_TOKENS:
+            warning_msg = f"警告：对话长度严重过长({current_tokens}/{TOKENS})，尽快调用工具保存部分聊天记录到文件。"
+            messages_for_api.append({"role": "system", "content": warning_msg})
+        elif current_tokens > WARNING_TOKENS:
+            warning_msg = f"警告：对话长度过长({current_tokens}/{TOKENS})，可调用工具保存部分聊天记录到文件。"
             messages_for_api.append({"role": "system", "content": warning_msg})
 
         # 工具调用循环
@@ -368,9 +393,28 @@ def main():
                 if key_info:
                     messages_for_api.append({"role": "system", "content": f"Key information:\n{key_info}"})
                 messages_for_api.extend(history)
+
+                # 构建消息列表后，添加 token 检查
                 current_tokens = count_tokens(messages_for_api)
-                if current_tokens > MAX_TOKENS:
-                    warning_msg = f"警告：对话长度过长({current_tokens}/{TOKENS})，考虑调用工具保存部分聊天记录到文件。"
+                if current_tokens > TOKENS:
+                    save_result = force_save()
+                    print(f"\n[触发强制保存]\n")
+                    # 重新构建 messages_for_api 以反映新的 history
+                    messages_for_api = []
+                    if prompt:
+                        messages_for_api.append({"role": "system", "content": prompt})
+                    key_info = load_key_info()
+                    if key_info:
+                        messages_for_api.append({"role": "system", "content": f"Key information:\n{key_info}"})
+                    if save_result:
+                        history.insert(0, {"role": "system", "content": save_result})
+                    messages_for_api.extend(history)
+                    current_tokens = count_tokens(messages_for_api)
+                if current_tokens > ERROR_TOKENS:
+                    warning_msg = f"警告：对话长度严重过长({current_tokens}/{TOKENS})，尽快调用工具保存部分聊天记录到文件。"
+                    messages_for_api.append({"role": "system", "content": warning_msg})
+                elif current_tokens > WARNING_TOKENS:
+                    warning_msg = f"警告：对话长度过长({current_tokens}/{TOKENS})，可调用工具保存部分聊天记录到文件。"
                     messages_for_api.append({"role": "system", "content": warning_msg})
             else:
                 turn_finished = True

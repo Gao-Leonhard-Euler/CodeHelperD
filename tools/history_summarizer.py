@@ -101,13 +101,13 @@ def _build_summary_text(messages: List[Dict[str, Any]]) -> str:
             lines.append(formatted)
     return "\n".join(lines)
 
-def _call_llm_to_summarize(text: str, config: Dict[str, str]) -> str:
+def _call_llm_to_summarize(text: str, config: Dict[str, str], prompt: str) -> str:
     """调用API生成摘要"""
     client = OpenAI(
         api_key=config["api_key"],
         base_url=config["base_url"]
     )
-    prompt = f"你是一位专业的对话摘要助手。请对以下用户与AI Agent的对话内容进行简短、全面、清晰、准确的总结摘要，高效提取关键信息，如核心主题、目的重点、关键操作、重要决策、待办事项等，忽略无关内容，忠于原文，不添加未出现信息，不捏造事实：\n\n{text}"
+    prompt = f"{prompt}{text}"
     try:
         response = client.chat.completions.create(
             model=config["model"],
@@ -119,7 +119,8 @@ def _call_llm_to_summarize(text: str, config: Dict[str, str]) -> str:
     except Exception as e:
         return f"生成摘要时API调用失败：{str(e)}"
 
-def execute(session_id: str) -> str:
+def execute(session_id: str, 
+            prompt = '你是一位专业的对话总结摘要助手。请对以下用户与AI Agent的对话内容进行简短、全面、清晰、准确的总结摘要，高效提取关键信息，如核心主题、目的重点、已知信息、关键操作、重要决策、待办事项等，忽略无关内容，忠于原文，不添加未出现信息，不捏造事实：\n\n') -> str:
     """
     工具执行入口
     """
@@ -156,7 +157,7 @@ def execute(session_id: str) -> str:
         return f"加载API配置失败：{str(e)}"
 
     # 4. 调用API生成摘要
-    result = _call_llm_to_summarize(summary_text, api_config)
+    result = _call_llm_to_summarize(summary_text, api_config, prompt=prompt)
 
     # 5. 保存到文件
     try:
