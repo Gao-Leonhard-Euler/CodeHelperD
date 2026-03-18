@@ -113,6 +113,10 @@ CodeHelperD/
 │   ├── last.json                  # 上次会话历史（加载）
 │   ├── session_*.json             # 会话历史
 │   ├── session_*.txt              # 会话摘要
+├── ds_token_calucation/           # 由 deepseek 提供的计算工具，从 deepseek 官方 api 手册中下载并直接使用，没有做出任何改动
+│   ├── deepseek_tokenizer.py
+│   ├── tokenizer_config.json
+│   ├── tokenizer.json
 ├── tools/                         # 工具模块
 │   ├── __init__.py                # 动态加载所有工具
 │   ├── cmake_compiler.py
@@ -143,8 +147,9 @@ CodeHelperD/
 1. **API Key**：请确保 API Key 有效且有足够的额度。
 2. **系统工具依赖**：部分工具（如 gcc、gdb、make、cmake、python、java、javac、jdb）需要系统已安装相应程序，并加入 PATH。
 3. **路径安全**：Agent 有读、写、执行文件的权限，可以考虑在更安全的环境下运行或监视 Agent 的行为。
-4. **Token 预警**：当对话长度超过 `MAX_TOKENS.txt` 中的 75% 的阈值时，Agent 会收到系统提示，可主动调用 `history_save` 存档旧消息；当对话长度超过 `MAX_TOKENS.txt` 中的阈值时，系统会强制存档旧消息。如果使用非 deepseekV3.2 模型，则可能需要修改此文件。
-5. **并发限制**：当前为单线程设计，不支持同时处理多个用户请求。
+4. **Token 计算**：使用 tiktoken 或 Deepseek 提供的计算工具进行计算，如果使用非 deepseekV3.2 模型，则可能需要修改 agent.py 中 count_tokens 的实现。( [deepseek](https://api-docs.deepseek.com/zh-cn/quick_start/token_usage), [Kimi](https://platform.moonshot.cn/docs/api/estimate#%E8%AF%B7%E6%B1%82%E5%9C%B0%E5%9D%80) )
+5. **Token 预警**：当对话长度超过 `MAX_TOKENS.txt` 中的 75% 的阈值时，Agent 会收到系统提示，可主动调用 `history_save` 存档旧消息；当对话长度超过 `MAX_TOKENS.txt` 中的阈值时，系统会强制存档旧消息。如果使用非 deepseekV3.2 模型，则可能需要修改此文件。
+6. **并发限制**：当前为单线程设计，不支持同时处理多个用户请求。
 
 ## License
 

@@ -8,7 +8,7 @@ import math
 from pathlib import Path
 from openai import OpenAI
 from typing import List, Dict, Any, Optional
-import tiktoken
+import tiktoken,transformers
 history: List[Dict[str, Any]] = []
 
 # ==================== 路径管理 ====================
@@ -112,6 +112,7 @@ def load_prompt() -> str:
     return ""
 
 # ==================== Token 计数和长度预警 ====================
+
 def read_max_tokens(lenfile: str = 'MAX_TOKENS.txt') -> int:
     """读取模型上下文最大 token 数"""
     try:
@@ -125,14 +126,51 @@ def read_max_tokens(lenfile: str = 'MAX_TOKENS.txt') -> int:
         print(f"发生错误: {e}")
     return 131072
 
-def count_tokens(messages: List[Dict[str, Any]]) -> int:
+# 全局 tokenizer 缓存
+_ds_tokenizer = None
+def ds_get_tokenizer():
+    global _ds_tokenizer
+    if _ds_tokenizer is None:
+        ds_tokenizer_dir = os.path.join(BASE_DIR, "ds_token_calucation")
+        if not os.path.exists(ds_tokenizer_dir):
+            raise FileNotFoundError(f"Tokenizer directory not found: {ds_tokenizer_dir}")
+        _ds_tokenizer = transformers.AutoTokenizer.from_pretrained(
+            ds_tokenizer_dir,
+            trust_remote_code=True
+        )
+    return _ds_tokenizer
+
+def count_tokens_DS(messages: List[Dict[str, Any]]) -> int:
     """估算消息列表的 token 数"""
-    encoding = tiktoken.get_encoding("cl100k_base")
+    tokenizer = ds_get_tokenizer()
+    total = 0
+    for msg in messages:
+        content = msg.get("content", "")
+        if content:
+            total += len(tokenizer.encode(content, add_special_tokens=False))
+        reasoning = msg.get("reasoning_content", "")
+        if reasoning:
+            total += len(tokenizer.encode(reasoning, add_special_tokens=False))
+        if msg.get("tool_calls"):
+            for tc in msg["tool_calls"]:
+                func = tc.get("function", {})
+                name = func.get("name", "")
+                args = func.get("arguments", "")
+                total += len(tokenizer.encode(name, add_special_tokens=False))
+                total += len(tokenizer.encode(args, add_special_tokens=False))
+    return total
+
+def count_tokens_tik(messages: List[Dict[str, Any]], encode: str = "cl100k_base") -> int:
+    """估算消息列表的 token 数"""
+    encoding = tiktoken.get_encoding(encode)
     total = 0
     for msg in messages:
         content = msg.get("content", "")
         if content:
             total += len(encoding.encode(content))
+        reasoning = msg.get("reasoning_content", "")
+        if reasoning:
+            total += len(tokenizer.encode(reasoning, add_special_tokens=False))
         if msg.get("tool_calls"):
             for tc in msg["tool_calls"]:
                 func = tc.get("function", {})
@@ -141,6 +179,9 @@ def count_tokens(messages: List[Dict[str, Any]]) -> int:
                 total += len(encoding.encode(name))
                 total += len(encoding.encode(args))
     return total
+
+def count_tokens(messages: List[Dict[str, Any]]) -> int:
+    return count_tokens_DS()
 
 # ==================== 历史记录保存工具 ====================
 def save_history_tool(keep_last: int = 0) -> str:
@@ -246,9 +287,9 @@ def main():
         base_url=config["base_url"]
     )
 
-    TOKENS = read_max_tokens()
-    WARNING_TOKENS = int(math.floor(0.75*TOKENS)-512)
-    ERROR_TOKENS = int(math.floor(0.875*TOKENS)-512)
+    TOKENS = int(read_max_tokens()-64)
+    WARNING_TOKENS = int(math.floor(0.75*TOKENS)-64)
+    ERROR_TOKENS = int(math.floor(0.875*TOKENS)-64)
     print(f'模型上下文长度：{TOKENS}；对话预警长度：{WARNING_TOKENS}')
     # 创建新会话文件
     history = load_history(os.path.join(MEMORY_DIR, 'last.json'))  # 通常为空，但若文件已存在则加载
