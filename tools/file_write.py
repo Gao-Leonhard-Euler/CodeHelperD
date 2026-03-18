@@ -59,7 +59,7 @@ tool_def = {
                 },
                 "column": {
                     "type": "integer",
-                    "description": "列号（从0开始，即该行第几个字符），用于 insert_type=line_column"
+                    "description": "列号（从0开始），用于 insert_type=line_column"
                 },
                 "delete_type": {
                     "type": "string",

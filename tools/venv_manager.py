@@ -44,7 +44,7 @@ tool_def = {
                 },
                 "python_version": {
                     "type": "string",
-                    "description": "Python版本（如'3.8'、'3.9'，用于create操作），默认为当前Python版本"
+                    "description": "Python版本（如'3.9'，用于create操作），默认当前版本"
                 },
                 "requirements": {
                     "type": "string",

@@ -35,7 +35,7 @@ tool_def = {
                 # compile 参数
                 "source_files": {
                     "type": "string",
-                    "description": "要编译的Java源文件路径，多个文件用空格分隔（compile操作必需）"
+                    "description": "要编译的Java源文件路径，多个文件用空格分隔（compile必需）"
                 },
                 "classpath": {
                     "type": "string",
@@ -52,7 +52,7 @@ tool_def = {
                 # debug 参数
                 "main_class": {
                     "type": "string",
-                    "description": "要调试的主类（debug操作必需）"
+                    "description": "要调试的主类（debug必需）"
                 },
                 "debug_classpath": {
                     "type": "string",

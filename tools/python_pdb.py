@@ -33,11 +33,11 @@ tool_def = {
                 },
                 "script_path": {
                     "type": "string",
-                    "description": "要调试的 Python 脚本路径（create 操作必需）"
+                    "description": "要调试的 Python 脚本路径（create 必需）"
                 },
                 "script_args": {
                     "type": "string",
-                    "description": "传递给脚本的命令行参数，默认为空（create 操作可选）"
+                    "description": "传递给脚本的命令行参数，默认为空（create 可选）"
                 },
                 "initial_commands": {
                     "type": "string",

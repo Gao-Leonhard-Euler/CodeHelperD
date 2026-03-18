@@ -188,7 +188,7 @@ def count_tokens(messages: List[Dict[str, Any]],tools: List[Dict[str, Any]]=None
     return count_tokens_DS(messages,tools)
 
 # ==================== 历史记录保存工具 ====================
-def save_history_tool(keep_last: int = 0, count: bool = True) -> str:
+def save_history_tool(keep_last: int = 0, only_name: bool = False) -> str:
     """
     将历史记录中除最近 keep_last 条之外的消息保存到文件，并从内存中移除。
     返回保存的消息提示。
@@ -218,10 +218,7 @@ def save_history_tool(keep_last: int = 0, count: bool = True) -> str:
     
     # 从 history 中移除已保存的消息
     history = history[save_count:]
-    count_info=''
-    if count:
-        count_info=f"保存 {save_count} 条消息，"
-    return f"{count_info}时间戳 {filenowtime}"
+    return filenowtime if only_name else f"保存 {save_count} 条消息于 {filenowtime}"
 
 def force_save(keep_last: int = 12) -> str:
     global history
@@ -358,8 +355,7 @@ def main():
                 key_info = load_key_info()
                 if key_info:
                     messages_for_api.append({"role": "system", "content": f"Key information:\n{key_info}"})
-                if save_result:
-                    history.insert(0, {"role": "system", "content": save_result})
+                history.insert(0, {"role": "system", "content": save_result})
                 messages_for_api.extend(history)
                 current_tokens = count_tokens(messages_for_api,tools_list)
         if current_tokens >= ERROR_TOKENS:
@@ -465,8 +461,7 @@ def main():
                         key_info = load_key_info()
                         if key_info:
                             messages_for_api.append({"role": "system", "content": f"Key information:\n{key_info}"})
-                        if save_result:
-                            history.insert(0, {"role": "system", "content": save_result})
+                        history.insert(0, {"role": "system", "content": save_result})
                         messages_for_api.extend(history)
                         current_tokens = count_tokens(messages_for_api,tools_list)
                 if current_tokens >= ERROR_TOKENS:

@@ -14,7 +14,7 @@ tool_def = {
     "type": "function",
     "function": {
         "name": "read_pdf",
-        "description": "读取 PDF 文件。支持提取文本、获取页数、获取字数，不支持图像。",
+        "description": "读取 PDF。支持提取文本、获取页数/字符数，不支持图表。",
         "parameters": {
             "type": "object",
             "properties": {

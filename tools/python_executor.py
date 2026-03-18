@@ -50,7 +50,7 @@ tool_def = {
                 },
                 "interactive_timeout": {
                     "type": "number",
-                    "description": "交互式会话每次等待的超时（秒），默认 4.0"
+                    "description": "交互式会话每次等待超时（秒），默认 4.0"
                 }
             },
             "required": ["action"]

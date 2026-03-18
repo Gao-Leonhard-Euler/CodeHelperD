@@ -18,13 +18,13 @@ tool_def = {
     "type": "function",
     "function": {
         "name": "history_summarize",
-        "description": "获取指定会话文件的摘要。传入会话标识（时间戳'YYYYMMDD_hhmmss'或文件前缀名'session_YYYYMMDD_hhmmss'）。",
+        "description": "获取指定会话文件的摘要。传入：时间戳'YYYYMMDD_hhmmss'/文件前缀'session_YYYYMMDD_hhmmss'/文件名'session_YYYYMMDD_hhmmss.json'。",
         "parameters": {
             "type": "object",
             "properties": {
                 "session_id": {
                     "type": "string",
-                    "description": "会话标识，时间戳'YYYYMMDD_hhmmss'或文件前缀名'session_YYYYMMDD_hhmmss'"
+                    "description": "时间戳/文件前缀/文件名"
                 }
             },
             "required": ["session_id"]
@@ -48,9 +48,13 @@ def _load_api_config() -> Dict[str, str]:
     return config
 
 def _normalize_session_id(session_id: str) -> str:
-    """将输入标准化为纯时间戳（去掉前缀）"""
-    if session_id.startswith("session_"):
+    """将输入标准化为纯时间戳（去掉前后缀）"""
+    session_id.strip()
+    if session_id.startswith('session_'):
         return session_id[8:]
+    if session_id.endswith('.json'):
+        return session_id[:-5]
+    session_id.strip()
     return session_id
 
 def _format_message_for_summary(msg: Dict[str, Any]) -> Optional[str]:

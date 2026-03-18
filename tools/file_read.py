@@ -38,19 +38,21 @@ tool_def = {
                 },
                 "start_byte": {
                     "type": "integer",
-                    "description": "读取字节范围的起始位置（包含），用于 read_bytes"
+                    "description": "读取字节范围的起始位置（包含），用于 read_bytes，默认 0",
+                    "default": 0
                 },
                 "end_byte": {
                     "type": "integer",
-                    "description": "读取字节范围的结束位置（不包含），用于 read_bytes；若不提供则读到文件末尾"
+                    "description": "读取字节范围的结束位置（不包含），用于 read_bytes，不提供则读到文件末尾"
                 },
                 "start_char": {
                     "type": "integer",
-                    "description": "读取字符范围的起始位置（包含），用于 read_chars"
+                    "description": "读取字符范围的起始位置（包含），用于 read_chars，默认 0",
+                    "default": 0
                 },
                 "num_chars": {
                     "type": "integer",
-                    "description": "要读取的字符数，用于 read_chars；若不提供则从 start_char 读到末尾"
+                    "description": "要读取的字符数，用于 read_chars，不提供则读到末尾"
                 },
                 "line_numbers": {
                     "type": "string",
@@ -58,7 +60,7 @@ tool_def = {
                 },
                 "keyword": {
                     "type": "string",
-                    "description": "要搜索的关键词，用于 search 操作"
+                    "description": "要搜索的关键词，用于 search"
                 },
                 "case_sensitive": {
                     "type": "boolean",
@@ -92,8 +94,8 @@ def _parse_line_numbers(line_numbers_str: str) -> List[int]:
     return sorted(set(result))
 
 def execute(file_path: str, operation: str, mode: str = "text", encoding: str = "utf-8",
-            start_byte: Optional[int] = None, end_byte: Optional[int] = None,
-            start_char: Optional[int] = None, num_chars: Optional[int] = None,
+            start_byte: Optional[int] = 0, end_byte: Optional[int] = None,
+            start_char: Optional[int] = 0, num_chars: Optional[int] = None,
             line_numbers: Optional[str] = None,
             keyword: Optional[str] = None, case_sensitive: bool = True,
             max_matches: Optional[int] = 100) -> str:
@@ -115,7 +117,7 @@ def execute(file_path: str, operation: str, mode: str = "text", encoding: str = 
                     return f"文件内容（base64）：{encoded}"
                 elif operation == "read_bytes":
                     if start_byte is None:
-                        return "错误：read_bytes 需要 start_byte 参数"
+                        start_byte=0
                     if start_byte < 0 or start_byte >= file_size:
                         return f"错误：start_byte {start_byte} 超出文件范围 [0, {file_size-1}]"
                     end = end_byte if end_byte is not None else file_size
@@ -179,7 +181,7 @@ def execute(file_path: str, operation: str, mode: str = "text", encoding: str = 
                     return f"文件内容：\n{content}"
                 elif operation == "read_chars":
                     if start_char is None:
-                        return "错误：read_chars 需要 start_char 参数"
+                        start_char=0
                     if start_char < 0 or start_char >= char_count:
                         return f"错误：start_char {start_char} 超出范围 [0, {char_count-1}]"
                     if num_chars is None:
