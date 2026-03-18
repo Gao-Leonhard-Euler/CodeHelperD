@@ -188,10 +188,10 @@ def count_tokens(messages: List[Dict[str, Any]],tools: List[Dict[str, Any]]=None
     return count_tokens_DS(messages,tools)
 
 # ==================== 历史记录保存工具 ====================
-def save_history_tool(keep_last: int = 0) -> str:
+def save_history_tool(keep_last: int = 0, count: bool = True) -> str:
     """
     将历史记录中除最近 keep_last 条之外的消息保存到文件，并从内存中移除。
-    返回保存的文件名。
+    返回保存的消息提示。
     """
     global history
     if keep_last < 0:
@@ -218,14 +218,19 @@ def save_history_tool(keep_last: int = 0) -> str:
     
     # 从 history 中移除已保存的消息
     history = history[save_count:]
-    return f"已保存 {save_count} 条消息，时间戳 {filenowtime}"
+    count_info=''
+    if count:
+        count_info=f"保存 {save_count} 条消息，"
+    return f"{count_info}时间戳 {filenowtime}"
 
 def force_save(keep_last: int = 12) -> str:
     global history
     from tools import history_summarizer
-    filenowtime=save_history_tool(keep_last=keep_last)
+    filenowtime=save_history_tool(keep_last=keep_last,count=False)
+    if filenowtime=="没有需要保存的消息":
+        return ""
     text=history_summarizer.execute(filenowtime)
-    return f'你之前的工作（已保存 {filenowtime}）摘要:\n\n{text}'
+    return f'你之前的工作（{filenowtime}）摘要:\n\n{text}'
 
 # ==================== 历史记录管理 ====================
 
@@ -293,10 +298,11 @@ def main():
         base_url=config["base_url"]
     )
 
-    TOKENS = int(read_max_tokens()-512)
-    WARNING_TOKENS = int(math.floor(0.75*TOKENS)-512)
-    ERROR_TOKENS = int(math.floor(0.875*TOKENS)-512)
-    print(f'模型上下文长度：{TOKENS}；对话预警长度：{WARNING_TOKENS}')
+    TOKENS = read_max_tokens()
+    WARNING_TOKENS = int(math.floor(0.75*TOKENS)-8192)
+    ERROR_TOKENS = int(math.floor(0.875*TOKENS)-8192)
+    FORCE_SAVE_TOKENS = TOKENS - 8192
+    print(f'模型上下文长度：{TOKENS}；对话预警长度：{WARNING_TOKENS}；强制保存长度：{FORCE_SAVE_TOKENS}')
     # 创建新会话文件
     history = load_history(os.path.join(MEMORY_DIR, 'last.json'))  # 通常为空，但若文件已存在则加载
 
@@ -340,25 +346,26 @@ def main():
         # 构建消息列表后，添加 token 检查
         current_tokens = count_tokens(messages_for_api,tools_list)
         try_save = 12
-        while current_tokens > TOKENS:
+        while current_tokens >= FORCE_SAVE_TOKENS:
             save_result = force_save(try_save)
             try_save = try_save//2
-            print(f"\n[触发强制保存]\n")
-            # 重新构建 messages_for_api 以反映新的 history
-            messages_for_api = []
-            if prompt:
-                messages_for_api.append({"role": "system", "content": prompt})
-            key_info = load_key_info()
-            if key_info:
-                messages_for_api.append({"role": "system", "content": f"Key information:\n{key_info}"})
             if save_result:
-                history.insert(0, {"role": "system", "content": save_result})
-            messages_for_api.extend(history)
-            current_tokens = count_tokens(messages_for_api,tools_list)
-        if current_tokens > ERROR_TOKENS:
+                print(f"\n[触发强制保存]\n")
+                # 重新构建 messages_for_api 以反映新的 history
+                messages_for_api = []
+                if prompt:
+                    messages_for_api.append({"role": "system", "content": prompt})
+                key_info = load_key_info()
+                if key_info:
+                    messages_for_api.append({"role": "system", "content": f"Key information:\n{key_info}"})
+                if save_result:
+                    history.insert(0, {"role": "system", "content": save_result})
+                messages_for_api.extend(history)
+                current_tokens = count_tokens(messages_for_api,tools_list)
+        if current_tokens >= ERROR_TOKENS:
             warning_msg = f"警告：对话长度严重过长({current_tokens}/{TOKENS})，尽快调用工具保存部分聊天记录到文件。"
             messages_for_api.append({"role": "system", "content": warning_msg})
-        elif current_tokens > WARNING_TOKENS:
+        elif current_tokens >= WARNING_TOKENS:
             warning_msg = f"警告：对话长度过长({current_tokens}/{TOKENS})，可调用工具保存部分聊天记录到文件。"
             messages_for_api.append({"role": "system", "content": warning_msg})
 
@@ -446,31 +453,31 @@ def main():
                 # 构建消息列表后，添加 token 检查
                 current_tokens = count_tokens(messages_for_api,tools_list)
                 try_save = 12
-                while current_tokens > TOKENS:
+                while current_tokens >= FORCE_SAVE_TOKENS:
                     save_result = force_save(try_save)
                     try_save = try_save//2
-                    print(f"\n[触发强制保存]\n")
-                    # 重新构建 messages_for_api 以反映新的 history
-                    messages_for_api = []
-                    if prompt:
-                        messages_for_api.append({"role": "system", "content": prompt})
-                    key_info = load_key_info()
-                    if key_info:
-                        messages_for_api.append({"role": "system", "content": f"Key information:\n{key_info}"})
                     if save_result:
-                        history.insert(0, {"role": "system", "content": save_result})
-                    messages_for_api.extend(history)
-                    current_tokens = count_tokens(messages_for_api,tools_list)
-                if current_tokens > ERROR_TOKENS:
+                        print(f"\n[触发强制保存]\n")
+                        # 重新构建 messages_for_api 以反映新的 history
+                        messages_for_api = []
+                        if prompt:
+                            messages_for_api.append({"role": "system", "content": prompt})
+                        key_info = load_key_info()
+                        if key_info:
+                            messages_for_api.append({"role": "system", "content": f"Key information:\n{key_info}"})
+                        if save_result:
+                            history.insert(0, {"role": "system", "content": save_result})
+                        messages_for_api.extend(history)
+                        current_tokens = count_tokens(messages_for_api,tools_list)
+                if current_tokens >= ERROR_TOKENS:
                     warning_msg = f"警告：对话长度严重过长({current_tokens}/{TOKENS})，尽快调用工具保存部分聊天记录到文件。"
                     messages_for_api.append({"role": "system", "content": warning_msg})
-                elif current_tokens > WARNING_TOKENS:
+                elif current_tokens >= WARNING_TOKENS:
                     warning_msg = f"警告：对话长度过长({current_tokens}/{TOKENS})，可调用工具保存部分聊天记录到文件。"
                     messages_for_api.append({"role": "system", "content": warning_msg})
             else:
                 turn_finished = True
 
-        
 
 if __name__ == "__main__":
     main()

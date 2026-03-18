@@ -28,7 +28,7 @@ tool_def = {
                 },
                 "encoding": {
                     "type": "string",
-                    "description": "文本文件的编码（仅在 mode=text 时使用），默认 utf-8",
+                    "description": "文本文件编码（仅在 mode=text 时使用），默认 utf-8",
                     "default": "utf-8"
                 },
                 "operation": {
@@ -38,7 +38,7 @@ tool_def = {
                 },
                 "data": {
                     "type": "string",
-                    "description": "要写入的数据。对于二进制模式，应为 base64 编码的字符串；对于文本模式，直接是文本内容。用于 write 和 insert。"
+                    "description": "要写入的数据。二进制模式下应为 base64 编码的字符串；文本模式下应是文本内容。用于 write 和 insert。"
                 },
                 "offset": {
                     "type": "integer",
@@ -68,23 +68,23 @@ tool_def = {
                 },
                 "start_byte": {
                     "type": "integer",
-                    "description": "删除字节范围的起始位置（包含），用于 delete_type=bytes"
+                    "description": "删除字节范围的起始（包含），用于 delete_type=bytes"
                 },
                 "end_byte": {
                     "type": "integer",
-                    "description": "删除字节范围的结束位置（不包含），用于 delete_type=bytes"
+                    "description": "删除字节范围的结束（不包含），用于 delete_type=bytes"
                 },
                 "start_char": {
                     "type": "integer",
-                    "description": "删除字符范围的起始位置（包含），用于 delete_type=chars"
+                    "description": "删除字符范围的起始（包含），用于 delete_type=chars"
                 },
                 "end_char": {
                     "type": "integer",
-                    "description": "删除字符范围的结束位置（不包含），用于 delete_type=chars"
+                    "description": "删除字符范围的结束（不包含），用于 delete_type=chars"
                 },
                 "line_numbers": {
                     "type": "string",
-                    "description": "要删除的行号，格式同 read_lines（单个、列表、范围或'all'），用于 delete_type=lines"
+                    "description": "要删除的行号，格式同 read_lines（单个、列表、范围，默认全部），用于 delete_type=lines"
                 }
             },
             "required": ["file_path", "operation"]

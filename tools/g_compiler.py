@@ -25,7 +25,7 @@ tool_def = {
                 "action": {
                     "type": "string",
                     "enum": ["compile", "version", "help"],
-                    "description": "操作类型：compile-编译；version-获取编译器版本；help-获取编译器帮助。默认为 compile。",
+                    "description": "操作类型：compile-编译；version-获取编译器版本；help-获取编译器帮助。默认 compile。",
                     "default": "compile"
                 },
                 "compiler": {

@@ -25,7 +25,7 @@ tool_def = {
                 },
                 "target": {
                     "type": "string",
-                    "description": "要构建的目标（如 all, clean, install），默认不指定调用默认目标"
+                    "description": "构建目标（如 all, clean, install），默认不指定调用默认目标"
                 },
                 "directory": {
                     "type": "string",

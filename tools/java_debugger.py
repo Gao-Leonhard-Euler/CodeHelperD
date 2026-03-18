@@ -78,11 +78,11 @@ tool_def = {
                 # send/close 参数
                 "session_id": {
                     "type": "string",
-                    "description": "会话ID（用于send和close操作）"
+                    "description": "会话ID（用于send和close）"
                 },
                 "command": {
                     "type": "string",
-                    "description": "要发送给jdb的命令（用于send操作）"
+                    "description": "要发送给jdb的命令（用于send）"
                 }
             },
             "required": ["action"]

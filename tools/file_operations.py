@@ -56,12 +56,12 @@ tool_def = {
                     "properties": {
                         "long": {
                             "type": "boolean",
-                            "description": "是否显示详细信息（类似 ls -l）",
+                            "description": "是否显示详细信息",
                             "default": False
                         },
                         "recursive": {
                             "type": "boolean",
-                            "description": "是否递归列出子目录（类似 ls -R）",
+                            "description": "是否递归列出子目录",
                             "default": False
                         },
                         "all": {
