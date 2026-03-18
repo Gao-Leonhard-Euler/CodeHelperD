@@ -75,7 +75,7 @@ def _format_message_for_summary(msg: Dict[str, Any]) -> Optional[str]:
             # 普通回复
             content = msg.get('content', '')
             if content:
-                lines.append("[Agent:\n{content}\n]")
+                lines.append(f"[Agent:\n{content}\n]")
         if lines:
             return "\n".join(lines)
         return None

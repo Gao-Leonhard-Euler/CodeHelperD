@@ -201,12 +201,14 @@ def save_history_tool(keep_last: int = 0) -> str:
     if save_count<total and history[save_count]['role']=='tool':
         save_count=save_count-1
     to_save = history[:save_count]
-    
+    # 确保 memory 目录存在
+    Path(MEMORY_DIR).mkdir(exist_ok=True)
     # 生成文件名
     filenowtime = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"session_{filenowtime}.json"
-    # 确保 memory 目录存在
-    Path(MEMORY_DIR).mkdir(exist_ok=True)
+    while os.path.exists(os.path.join(MEMORY_DIR, filename)):
+        filenowtime = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"session_{filenowtime}.json"
     with open(os.path.join(MEMORY_DIR, filename), "w", encoding="utf-8") as f:
         json.dump(to_save, f, indent=2, ensure_ascii=False)
     
@@ -219,7 +221,7 @@ def force_save(keep_last: int = 12) -> str:
     from tools import history_summarizer
     filenowtime=save_history_tool(keep_last=keep_last)
     text=history_summarizer.execute(filenowtime)
-    return f'你之前的工作部分（已保存至聊天记录:时间戳{filenowtime}）的摘要如下:\n\n{text}'
+    return f'你之前的工作（已保存 {filenowtime}）摘要:\n\n{text}'
 
 # ==================== 历史记录管理 ====================
 
@@ -333,8 +335,10 @@ def main():
 
         # 构建消息列表后，添加 token 检查
         current_tokens = count_tokens(messages_for_api)
-        if current_tokens > TOKENS:
-            save_result = force_save()
+        try_save = 12
+        while current_tokens > TOKENS:
+            save_result = force_save(try_save)
+            try_save = try_save//2
             print(f"\n[触发强制保存]\n")
             # 重新构建 messages_for_api 以反映新的 history
             messages_for_api = []
@@ -437,8 +441,10 @@ def main():
 
                 # 构建消息列表后，添加 token 检查
                 current_tokens = count_tokens(messages_for_api)
-                if current_tokens > TOKENS:
-                    save_result = force_save()
+                try_save = 12
+                while current_tokens > TOKENS:
+                    save_result = force_save(try_save)
+                    try_save = try_save//2
                     print(f"\n[触发强制保存]\n")
                     # 重新构建 messages_for_api 以反映新的 history
                     messages_for_api = []
