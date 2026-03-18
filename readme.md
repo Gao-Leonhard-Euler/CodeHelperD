@@ -147,7 +147,7 @@ CodeHelperD/
 1. **API Key**：请确保 API Key 有效且有足够的额度。
 2. **系统工具依赖**：部分工具（如 gcc、gdb、make、cmake、python、java、javac、jdb）需要系统已安装相应程序，并加入 PATH。
 3. **路径安全**：Agent 有读、写、执行文件的权限，可以考虑在更安全的环境下运行或监视 Agent 的行为。
-4. **Token 计算**：使用 tiktoken 或 Deepseek 提供的计算工具进行计算，如果使用非 deepseekV3.2 模型，则可能需要修改 agent.py 中 count_tokens 的实现。( [deepseek](https://api-docs.deepseek.com/zh-cn/quick_start/token_usage), [Kimi](https://platform.moonshot.cn/docs/api/estimate#%E8%AF%B7%E6%B1%82%E5%9C%B0%E5%9D%80) )
+4. **Token 计算**：使用 tiktoken 或 Deepseek 提供的计算工具进行计算，如果使用非 deepseekV3.2 模型，则可能需要修改 agent.py 中 count_tokens 的实现。（参考：[deepseek](https://api-docs.deepseek.com/zh-cn/quick_start/token_usage), [Kimi](https://platform.moonshot.cn/docs/api/estimate#%E8%AF%B7%E6%B1%82%E5%9C%B0%E5%9D%80), [GLM](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E6%96%87%E6%9C%AC%E5%88%86%E8%AF%8D%E5%99%A8)）
 5. **Token 预警**：当对话长度超过 `MAX_TOKENS.txt` 中的 75% 的阈值时，Agent 会收到系统提示，可主动调用 `history_save` 存档旧消息；当对话长度超过 `MAX_TOKENS.txt` 中的阈值时，系统会强制存档旧消息。如果使用非 deepseekV3.2 模型，则可能需要修改此文件。
 6. **并发限制**：当前为单线程设计，不支持同时处理多个用户请求。
 

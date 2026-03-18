@@ -141,7 +141,7 @@ def ds_get_tokenizer():
     return _ds_tokenizer
 
 def count_tokens_DS(messages: List[Dict[str, Any]],tools: List[Dict[str, Any]]=None) -> int:
-    """估算消息列表的 token 数"""
+    """使用 Deepseek 提供的工具估算消息列表的 token 数"""
     tokenizer = ds_get_tokenizer()
     total = 0
     for msg in messages:
@@ -184,6 +184,68 @@ def count_tokens_tik(messages: List[Dict[str, Any]],tools: List[Dict[str, Any]]=
         total+=len(encoding.encode(json.dumps(tools, ensure_ascii=False)))
     return total
 
+def count_tokens_kimi(messages: List[Dict[str, Any]], tools: List[Dict[str, Any]] = None) -> int:
+    """使用 Kimi API 估算消息列表的 token 数"""
+    # 读取 config.json 配置
+    config = load_config()
+    api_key = config.get("api_key", "")
+    base_url = config.get("base_url", "https://api.moonshot.cn")
+    model = config.get("model", "kimi-k2-turbo-preview")
+    # 构建请求 URL
+    url = f"{base_url}/v1/tokenizers/estimate-token-count"
+    # 准备请求体
+    payload = {
+        "model": model,
+        "messages": messages
+    }
+    # 发送请求
+    import requests
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}"
+    }
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=30)
+        response.raise_for_status()
+        result = response.json()
+        return result.get("data", {}).get("total_tokens", 0)
+    except Exception as e:
+        print(f"Kimi API 调用失败: {e}")
+        return count_tokens_DS(messages, tools)
+    
+def count_tokens_glm(messages: List[Dict[str, Any]], tools: List[Dict[str, Any]] = None) -> int:
+    """使用 GLM API 计算 token 数"""
+    # 读取 config.json 配置
+    config = load_config()
+    api_key = config.get("api_key", "")
+    base_url = config.get("base_url", "https://open.bigmodel.cn/api/paas/v4")
+    model = config.get("model", "glm-4.6")
+    # 构建请求 URL
+    url = f"{base_url}/tokenizer"
+    # 准备请求体
+    payload = {
+        "model": model,
+        "messages": messages
+    }
+    # 发送请求
+    import requests
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    try:
+        response = requests.post(url, json=payload, headers=headers, timeout=30)
+        response.raise_for_status()
+        result = response.json()
+        usage = result.get("usage", {})
+        total_tokens = usage.get("total_tokens", 0)
+        if total_tokens == 0:
+            total_tokens = usage.get("prompt_tokens", 0)
+        return total_tokens
+    except Exception as e:
+        print(f"GLM API 调用失败: {e}")
+        return count_tokens_DS(messages, tools)
+
 def count_tokens(messages: List[Dict[str, Any]],tools: List[Dict[str, Any]]=None) -> int:
     return count_tokens_DS(messages,tools)
 
@@ -202,8 +264,10 @@ def save_history_tool(keep_last: int = 0, only_name: bool = False) -> str:
         return "没有需要保存的消息"
     # 要保存的消息索引范围 [0, total-keep_last-1]
     save_count = total - keep_last
-    if save_count<total and history[save_count]['role']=='tool':
+    while save_count>=0 and save_count<total and history[save_count]['role']=='tool':
         save_count=save_count-1
+    if save_count <= 0:
+        return "没有需要保存的消息"
     to_save = history[:save_count]
     # 确保 memory 目录存在
     Path(MEMORY_DIR).mkdir(exist_ok=True)
@@ -215,7 +279,6 @@ def save_history_tool(keep_last: int = 0, only_name: bool = False) -> str:
         filename = f"session_{filenowtime}.json"
     with open(os.path.join(MEMORY_DIR, filename), "w", encoding="utf-8") as f:
         json.dump(to_save, f, indent=2, ensure_ascii=False)
-    
     # 从 history 中移除已保存的消息
     history = history[save_count:]
     return filenowtime if only_name else f"保存 {save_count} 条消息于 {filenowtime}"
@@ -223,7 +286,7 @@ def save_history_tool(keep_last: int = 0, only_name: bool = False) -> str:
 def force_save(keep_last: int = 12) -> str:
     global history
     from tools import history_summarizer
-    filenowtime=save_history_tool(keep_last=keep_last,count=False)
+    filenowtime=save_history_tool(keep_last=keep_last,only_name=True)
     if filenowtime=="没有需要保存的消息":
         return ""
     text=history_summarizer.execute(filenowtime)
@@ -343,7 +406,7 @@ def main():
         # 构建消息列表后，添加 token 检查
         current_tokens = count_tokens(messages_for_api,tools_list)
         try_save = 12
-        while current_tokens >= FORCE_SAVE_TOKENS:
+        while try_save>0 and current_tokens >= FORCE_SAVE_TOKENS:
             save_result = force_save(try_save)
             try_save = try_save//2
             if save_result:
@@ -449,7 +512,7 @@ def main():
                 # 构建消息列表后，添加 token 检查
                 current_tokens = count_tokens(messages_for_api,tools_list)
                 try_save = 12
-                while current_tokens >= FORCE_SAVE_TOKENS:
+                while try_save>0 and current_tokens >= FORCE_SAVE_TOKENS:
                     save_result = force_save(try_save)
                     try_save = try_save//2
                     if save_result:
