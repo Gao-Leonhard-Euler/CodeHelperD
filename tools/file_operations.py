@@ -161,13 +161,17 @@ def _safe_remove(path: Path, recursive: bool = False) -> str:
     except OSError as e:
         return f"删除失败：{e}"
 
-def execute(action: str, path: str, dest: Optional[str] = None,
+def execute(action: str, path: str = None, dest: Optional[str] = None,
             list_options: Optional[Dict[str, Any]] = None,
             recursive: bool = False,
             compress_format: str = "zip") -> str:
     """
     执行文件操作。
     """
+    # 获取当前工作目录
+    if action == "pwd":
+        return f"当前工作目录：{os.getcwd()}"
+    
     # 解析路径
     src_path = Path(path)
     dest_path = Path(dest) if dest else None
@@ -311,10 +315,6 @@ def execute(action: str, path: str, dest: Optional[str] = None,
                 return f"错误：不支持的文件格式或不是有效的压缩文件 {src_path}"
         except Exception as e:
             return f"解压失败：{e}"
-    
-    # 获取当前工作目录
-    elif action == "pwd":
-        return f"当前工作目录：{os.getcwd()}"
     
     # 修改当前工作目录
     elif action == "cd":

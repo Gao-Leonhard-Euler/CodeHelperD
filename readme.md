@@ -50,6 +50,7 @@ CodeHelperD 是一个基于 API 的智能代码助手 Agent，它能够理解自
 - `tiktoken>=0.5.0`：用于估算 token 数量
 - `virtualenv>=20.0.0`: 用于创建和管理 python 虚拟环境
 - `PyMuPDF>=1.23.0`: 用于读取 PDF 文件
+- `openpyxl>=3.0.0`: 用于读取和编辑 xlsx 表格
 
 ## 配置说明
 
@@ -98,6 +99,7 @@ python agent.py
 | `python_pdb` | 使用 pdb 调试 Python 代码。 |
 | `java_debugger` | 编译和调试 Java 代码。 |
 | `read_pdf` | 读取 PDF 文件中的文本内容。 |
+| `xlsx_edit` | 读取和编辑 xlsx 文件中的文本内容。 |
 
 ## 项目文件结构
 
@@ -136,6 +138,7 @@ CodeHelperD/
 │   ├── venv_manager.py
 │   ├── java_debugger.py
 │   ├── read_pdf.py
+│   ├── xlsx_edit.py
 │   └── utils/
 │       └── cpp_bridge/            # C++ 实现的工具（可扩展）
 └── requirements.txt               # Python 依赖
