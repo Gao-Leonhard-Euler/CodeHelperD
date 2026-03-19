@@ -145,28 +145,34 @@ def count_tokens_DS(messages: List[Dict[str, Any]],tools: List[Dict[str, Any]]=N
     tokenizer = ds_get_tokenizer()
     total = 0
     for msg in messages:
+        role = msg.get("role", "")
+        if role:
+            total += len(tokenizer.encode(role))
         content = msg.get("content", "")
         if content:
-            total += len(tokenizer.encode(content, add_special_tokens=False))
+            total += len(tokenizer.encode(content))
         reasoning = msg.get("reasoning_content", "")
         if reasoning:
-            total += len(tokenizer.encode(reasoning, add_special_tokens=False))
+            total += len(tokenizer.encode(reasoning))
         if msg.get("tool_calls"):
             for tc in msg["tool_calls"]:
                 func = tc.get("function", {})
                 name = func.get("name", "")
                 args = func.get("arguments", "")
-                total += len(tokenizer.encode(name, add_special_tokens=False))
-                total += len(tokenizer.encode(args, add_special_tokens=False))
+                total += len(tokenizer.encode(name))
+                total += len(tokenizer.encode(args))
     if tools:
-        total+=len(tokenizer.encode(json.dumps(tools, ensure_ascii=False), add_special_tokens=False))
-    return total
+        total+=len(tokenizer.encode(json.dumps(tools, ensure_ascii=False)))
+    return max(total,len(tokenizer.encode(tokenizer.apply_chat_template(messages,tokenize=False,tools=tools))))
 
 def count_tokens_tik(messages: List[Dict[str, Any]],tools: List[Dict[str, Any]]=None, encode: str = "cl100k_base") -> int:
     """估算消息列表的 token 数"""
     encoding = tiktoken.get_encoding(encode)
     total = 0
     for msg in messages:
+        role = msg.get("role", "")
+        if role:
+            total += len(encoding.encode(role))
         content = msg.get("content", "")
         if content:
             total += len(encoding.encode(content))
@@ -194,9 +200,13 @@ def count_tokens_kimi(messages: List[Dict[str, Any]], tools: List[Dict[str, Any]
     # 构建请求 URL
     url = f"{base_url}/v1/tokenizers/estimate-token-count"
     # 准备请求体
+    msgs=[]
+    if tools:
+        msgs.append({"role": "system", "content": str(json.dumps(tools, ensure_ascii=False))})
+    msgs.extend(messages)
     payload = {
         "model": model,
-        "messages": messages
+        "messages": msgs
     }
     # 发送请求
     import requests
@@ -223,9 +233,13 @@ def count_tokens_glm(messages: List[Dict[str, Any]], tools: List[Dict[str, Any]]
     # 构建请求 URL
     url = f"{base_url}/tokenizer"
     # 准备请求体
+    msgs=[]
+    if tools:
+        msgs.append({"role": "system", "content": str(json.dumps(tools, ensure_ascii=False))})
+    msgs.extend(messages)
     payload = {
         "model": model,
-        "messages": messages
+        "messages": msgs
     }
     # 发送请求
     import requests
@@ -246,8 +260,49 @@ def count_tokens_glm(messages: List[Dict[str, Any]], tools: List[Dict[str, Any]]
         print(f"GLM API 调用失败: {e}")
         return count_tokens_DS(messages, tools)
 
+def count_by_char(text: str) -> float:
+    """
+    根据字符类型估算 token 数量：
+    - ASCII 字符（英文字母、数字、标点等）每个约 0.3 token
+    - 非 ASCII 字符（如中文）每个约 0.6 token
+    “一般情况下模型中 token 和字数的换算比例大致如下：
+    1 个英文字符 ≈ 0.3 个 token。
+    1 个中文字符 ≈ 0.6 个 token。”
+    ————DeepSeek API 文档：Token 用量计算
+    """
+    total = 0.0
+    for ch in text:
+        if ord(ch) < 128:   # ASCII 字符
+            total += 0.3
+        else:
+            total += 0.6
+    return total
+
+def count_tokens_by_char(messages: List[Dict[str, Any]],tools: List[Dict[str, Any]]=None) -> int:
+    total = 0
+    for msg in messages:
+        role = msg.get("role", "")
+        if role:
+            total += count_by_char(role)
+        content = msg.get("content", "")
+        if content:
+            total += count_by_char(content)
+        reasoning = msg.get("reasoning_content", "")
+        if reasoning:
+            total += count_by_char(reasoning)
+        if msg.get("tool_calls"):
+            for tc in msg["tool_calls"]:
+                func = tc.get("function", {})
+                name = func.get("name", "")
+                args = func.get("arguments", "")
+                total += count_by_char(name)
+                total += count_by_char(args)
+    if tools:
+        total+=count_by_char(json.dumps(tools, ensure_ascii=False))
+    return int(math.ceil(total))
+
 def count_tokens(messages: List[Dict[str, Any]],tools: List[Dict[str, Any]]=None) -> int:
-    return count_tokens_DS(messages,tools)
+    return count_tokens_tik(messages,tools)
 
 # ==================== 历史记录保存工具 ====================
 def save_history_tool(keep_last: int = 0, only_name: bool = False) -> str:

@@ -1,9 +1,11 @@
 __pycache__/
 tools/__pycache__/
 venvs/
+memory/
 config.json
 history_config.json
 *.pyc
 session_*.json
 session_*.txt
 last.json
+key_info.txt

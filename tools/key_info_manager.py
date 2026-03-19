@@ -14,7 +14,7 @@ tool_def = {
     "type": "function",
     "function": {
         "name": "key_info_manage",
-        "description": "管理长期记忆文件 key_info.txt 的内容。该文件用于存储需要长期保留的关键信息，每次对话会自动加载其内容作为系统消息。支持读取、追加、替换或删除行内容（行号从1开始）。",
+        "description": "管理长期记忆文件 key_info.txt 的内容。该文件存储需要长期保留的关键信息，会自动加载其内容作为系统消息。支持读取、追加、替换或删除行内容（行号从1开始）。",
         "parameters": {
             "type": "object",
             "properties": {
