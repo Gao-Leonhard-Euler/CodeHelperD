@@ -48,7 +48,7 @@ tool_def = {
                 },
                 "dest": {
                     "type": "string",
-                    "description": "目标路径（用于复制、移动、重命名、压缩输出等）"
+                    "description": "目标路径（用于复制、移动、重命名、压缩等）"
                 },
                 # list 操作特定参数
                 "list_options": {
@@ -113,7 +113,7 @@ def _get_file_info(file_path: Path, long_format: bool = False) -> str:
 def _list_directory(path: Path, long: bool = False, recursive: bool = False, all: bool = False) -> str:
     """列出目录内容，支持递归和详细信息"""
     if not path.is_dir():
-        return f"错误：{path} 不是一个目录"
+        return f"错误：{path} 不是目录"
 
     result_lines = []
     if recursive:

@@ -12,7 +12,7 @@ tool_def = {
     "type": "function",
     "function": {
         "name": "file_write",
-        "description": "对文件进行写入、插入、删除等修改操作。支持二进制和文本模式。",
+        "description": "对文件进行修改:写入/插入/删除。支持二进制和文本模式。",
         "parameters": {
             "type": "object",
             "properties": {

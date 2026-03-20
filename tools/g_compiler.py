@@ -44,7 +44,7 @@ tool_def = {
                 },
                 "options": {
                     "type": "string",
-                    "description": "额外的编译选项，如 '-O2 -Wall -lm'，用引号包围"
+                    "description": "额外编译选项，如 '-O2 -Wall -lm'，用引号包围"
                 },
                 "timeout": {
                     "type": "integer",

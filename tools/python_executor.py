@@ -23,7 +23,7 @@ tool_def = {
     "type": "function",
     "function": {
         "name": "python_executor",
-        "description": "在当前主环境中运行 Python 代码。",
+        "description": "在当前主环境运行 Python 代码。",
         "parameters": {
             "type": "object",
             "properties": {
@@ -34,7 +34,7 @@ tool_def = {
                 },
                 "code": {
                     "type": "string",
-                    "description": "要执行的 Python 代码（用于 run 操作）或 help 要求（用于 help 操作，若输入 '-env' 则执行 'python --help-env'，默认为空）"
+                    "description": "要执行的 Python 代码（用于 run 操作）或 help 要求（用于 help 操作，输入 '-env' 则执行 'python --help-env'，默认为空）"
                 },
                 "timeout": {
                     "type": "number",

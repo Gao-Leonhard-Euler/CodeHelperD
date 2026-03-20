@@ -34,20 +34,20 @@ tool_def = {
                 },
                 "gdb_args": {
                     "type": "string",
-                    "description": "传递给 gdb 的启动参数（如 '-q ./a.out'），默认为空。可通过 '--help' 获取帮助。"
+                    "description": "gdb 启动参数（如 '-q ./a.out'），默认为空。可通过 '--help' 获取帮助。"
                 },
                 "timeout_per_step": {
                     "type": "number",
-                    "description": "每次命令执行的超时时间（秒），默认 5",
+                    "description": "每次命令执行的超时时间（秒），默认 5.0",
                     "default": 5.0
                 },
                 "session_id": {
                     "type": "string",
-                    "description": "会话 ID（用于 send 和 close 操作）"
+                    "description": "会话 ID（用于 send 和 close）"
                 },
                 "command": {
                     "type": "string",
-                    "description": "要发送给 gdb 的命令（用于 send 操作）"
+                    "description": "发给 gdb 的命令（用于 send）"
                 }
             },
             "required": ["action"]

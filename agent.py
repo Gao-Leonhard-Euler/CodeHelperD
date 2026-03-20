@@ -417,7 +417,8 @@ def main():
     WARNING_TOKENS = int(math.floor(0.75*TOKENS)-8192)
     ERROR_TOKENS = int(math.floor(0.875*TOKENS)-8192)
     FORCE_SAVE_TOKENS = TOKENS - 8192
-    print(f'模型上下文长度：{TOKENS}；对话预警长度：{WARNING_TOKENS}；强制保存长度：{FORCE_SAVE_TOKENS}')
+    TOOL_TOKENS = int(math.floor(0.875*FORCE_SAVE_TOKENS)-8192)
+    print(f'模型上下文长度：{TOKENS}；对话预警长度：{WARNING_TOKENS}；强制保存长度：{FORCE_SAVE_TOKENS}；工具返回最大长度：{TOOL_TOKENS}')
     # 创建新会话文件
     history = load_history(os.path.join(MEMORY_DIR, 'last.json'))  # 通常为空，但若文件已存在则加载
 
@@ -439,9 +440,9 @@ def main():
         elif user_input_or_cmd == ":clean":
             # 删除 memory 下所有会话文件
             import glob
-            for f in glob.glob(os.path.join(MEMORY_DIR, "session_*.json")):
+            for f in glob.glob(os.path.join(MEMORY_DIR, "*.json")):
                 os.remove(f)
-            for f in glob.glob(os.path.join(MEMORY_DIR, "session_*.txt")):
+            for f in glob.glob(os.path.join(MEMORY_DIR, "*.txt")):
                 os.remove(f)
             print("已清理所有聊天记录。再见！")
             break
@@ -544,15 +545,37 @@ def main():
                         result = call_tool(tool_name, args)
                     except Exception as e:
                         result = f"工具执行出错: {e}"
-
-                    print(f"[工具结果] {result}")
-
-                    # 将工具结果加入历史
+                    # 构建工具结果
+                    result=str(result)
                     tool_message = {
                         "role": "tool",
                         "tool_call_id": tool_call.id,
-                        "content": str(result)
+                        "content": result
                     }
+                    # 判断工具输出是否超出TOKEN限制
+                    messages_for_api=[]
+                    if prompt:
+                        messages_for_api.append({"role": "system", "content": prompt})
+                    key_info = load_key_info()
+                    if key_info:
+                        messages_for_api.append({"role": "system", "content": f"Key information:\n{key_info}"})
+                    messages_for_api.append(tool_message)
+                    filename = f"tool_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.txt"
+                    while os.path.exists(os.path.join(MEMORY_DIR, filename)):
+                        filename = f"tool_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.txt"
+                    with open(os.path.join(MEMORY_DIR, filename), "w", encoding="utf-8") as f:
+                        f.write(result)
+                    if count_tokens(messages=messages_for_api,tools=tools_list)>TOOL_TOKENS:
+                        result=f'工具调用结果过长，已保存至{filename}，可使用history_searcher工具访问'
+                    else:
+                        result=f'结果(已保存至{filename}):\n{result}'
+                    tool_message = {
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "content": result
+                    }
+                    print(f"[工具结果]{result}")
+                    # 将工具结果加入历史
                     history.append(tool_message)
 
                 # 重新构建 messages_for_api 以保证一致性

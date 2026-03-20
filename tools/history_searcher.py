@@ -18,18 +18,18 @@ tool_def = {
     "type": "function",
     "function": {
         "name": "history_search",
-        "description": "搜索或查询已保存的聊天记录文件。支持关键字搜索、消息计数、获取指定消息。",
+        "description": "搜索或查询已保存的聊天记录文件或工具调用记录。",
         "parameters": {
             "type": "object",
             "properties": {
                 "action": {
                     "type": "string",
-                    "enum": ["search", "count", "get", "list"],
-                    "description": "操作类型：search-关键字搜索，count-统计消息数量，get-获取指定消息，list-列出会话文件"
+                    "enum": ["search", "count", "get", "list", "tool_stat", "tool_read"],
+                    "description": "操作类型：search-聊天记录关键字搜索，count-统计聊天记录消息数量，get-获取聊天记录指定消息，list-列出聊天记录文件，tool_stat-统计工具结果文件，tool_read-读取工具结果文件内容"
                 },
                 "session_id": {
                     "type": "string",
-                    "description": "可选的会话标识（时间戳'YYYYMMDD_hhmmss'或文件前缀名'session_YYYYMMDD_hhmmss'）。若不提供，则搜索所有会话"
+                    "description": "会话/工具调用结果标识（时间戳'YYYYMMDD_hhmmss'或文件前缀名'session_YYYYMMDD_hhmmss'/'tool_YYYYMMDD_hhmmss'）。对于聊天记录相关功能，若不提供，则搜索所有会话"
                 },
                 "start_time": {
                     "type": "string",
@@ -72,6 +72,20 @@ tool_def = {
                 "message_end": {
                     "type": "integer",
                     "description": "结束消息编号（包含，用于 get），不提供则只返回 message_start 单条"
+                },
+                "range_type": {
+                    "type": "string",
+                    "enum": ["line", "char"],
+                    "description": "范围类型：line-按行，char-按字符，用于 tool_read",
+                    "default": "line"
+                },
+                "start": {
+                    "type": "integer",
+                    "description": "起始位置（行号或字符位置，从1开始），用于 tool_read"
+                },
+                "end": {
+                    "type": "integer",
+                    "description": "结束位置（包含，可选，若省略则只返回 start 对应的单行/单字符），用于 tool_read"
                 }
             },
             "required": ["action"]
@@ -83,6 +97,9 @@ def _normalize_session_id(session_id: str) -> str:
     """将输入标准化为纯时间戳（去掉前缀）"""
     if session_id.startswith("session_"):
         return session_id[8:]
+    if session_id.endswith(".json"):
+        return session_id[:-5]
+    session_id.strip()
     return session_id
 
 def _parse_time_range(start: Optional[str], end: Optional[str]) -> Tuple[Optional[str], Optional[str]]:
@@ -201,15 +218,19 @@ def execute(action: str,
             keyword: Optional[str] = None,
             count_role: Optional[str] = None,
             message_start: Optional[int] = None,
-            message_end: Optional[int] = None) -> str:
+            message_end: Optional[int] = None,
+            range_type: str = "line",
+            start: Optional[int] = None,
+            end: Optional[int] = None) -> str:
     """
     执行历史记录搜索/统计/获取操作。
     """
-    # 参数预处理
-    try:
-        start, end = _parse_time_range(start_time, end_time)
-    except ValueError as e:
-        return f"参数错误：{e}"
+    if action not in ["tool_stat", "tool_read"]:
+        # 参数预处理
+        try:
+            start, end = _parse_time_range(start_time, end_time)
+        except ValueError as e:
+            return f"参数错误：{e}"
 
     # 获取会话文件列表
     files = _get_session_files(session_id, start, end)
@@ -317,5 +338,72 @@ def execute(action: str,
                 msg_count = "?"
             result_lines.append(f"  {ts} - {msg_count} 条消息 - {f.name}")
         return "\n".join(result_lines)
+    elif action == "tool_stat":
+        if not session_id:
+            return "错误：tool_stat 操作需要提供 session_id。"
+        # 规范化文件名
+        fname = session_id.strip()
+        if not fname.endswith(".txt"):
+            fname = fname + ".txt"
+        if not fname.startswith("tool_"):
+            fname = "tool_" + fname
+        file_path = MEMORY_DIR / fname
+        if not file_path.exists():
+            return f"文件不存在：{fname}"
+        try:
+            with open(file_path, "r", encoding="utf-8") as fp:
+                content = fp.read()
+            lines = content.splitlines()
+            line_count = len(lines)
+            char_count = len(content)
+            return f"文件 {fname} 统计信息：\n行数：{line_count}\n字符数：{char_count}"
+        except Exception as e:
+            return f"读取文件失败：{e}"
+
+    # 新增：处理工具结果文件读取
+    elif action == "tool_read":
+        if not session_id:
+            return "错误：tool_read 操作需要提供 session_id。"
+        if start is None:
+            return "错误：tool_read 操作需要提供 start 参数。"
+        # 规范化文件名
+        fname = session_id.strip()
+        if not fname.endswith(".txt"):
+            fname = fname + ".txt"
+        if not fname.startswith("tool_"):
+            fname = "tool_" + fname
+        file_path = MEMORY_DIR / fname
+        if not file_path.exists():
+            return f"文件不存在：{fname}"
+        try:
+            with open(file_path, "r", encoding="utf-8") as fp:
+                content = fp.read()
+        except Exception as e:
+            return f"读取文件失败：{e}"
+
+        range_type = range_type or "line"
+        if range_type == "line":
+            lines = content.splitlines()
+            total_lines = len(lines)
+            s = start
+            e = end if end is not None else s
+            if s < 1 or s > total_lines:
+                return f"起始行号 {s} 超出范围 (1-{total_lines})"
+            if e < s or e > total_lines:
+                return f"结束行号 {e} 超出范围 (1-{total_lines})"
+            result_lines = lines[s-1:e]
+            return "\n".join(result_lines)
+        elif range_type == "char":
+            total_chars = len(content)
+            s = start
+            e = end if end is not None else s
+            if s < 1 or s > total_chars:
+                return f"起始字符位置 {s} 超出范围 (1-{total_chars})"
+            if e < s or e > total_chars:
+                return f"结束字符位置 {e} 超出范围 (1-{total_chars})"
+            # 转换为 0-based 索引，切片包含 end
+            return content[s-1:e]
+        else:
+            return f"未知的 range_type：{range_type}"
     else:
         return f"错误：未知操作 {action}"
