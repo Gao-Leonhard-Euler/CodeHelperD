@@ -100,6 +100,7 @@ python agent.py
 | `java_debugger` | 编译和调试 Java 代码。 |
 | `read_pdf` | 读取 PDF 文件中的文本内容。 |
 | `xlsx_edit` | 读取和编辑 xlsx 文件中的文本内容。 |
+| `docx_read` | 读取 docx 文件中的文本内容。 |
 
 ## 项目文件结构
 
@@ -115,6 +116,7 @@ CodeHelperD/
 │   ├── last.json                  # 上次会话历史（加载）
 │   ├── session_*.json             # 会话历史
 │   ├── session_*.txt              # 会话摘要
+│   ├── tool_*.txt                 # 工具调用记录
 ├── ds_token_calucation/           # 由 deepseek 提供的计算分词工具，从 deepseek 官方 api 手册中下载并直接使用
 │   ├── tokenizer_config.json
 │   ├── tokenizer.json
@@ -139,6 +141,7 @@ CodeHelperD/
 │   ├── java_debugger.py
 │   ├── read_pdf.py
 │   ├── xlsx_edit.py
+│   ├── docx_read.py
 │   └── utils/
 │       └── cpp_bridge/            # C++ 实现的工具（可扩展）
 └── requirements.txt               # Python 依赖

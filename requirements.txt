@@ -4,3 +4,4 @@ virtualenv>=20.0.0
 PyMuPDF>=1.23.0
 transformers>=4.31.0
 openpyxl>=3.0.0
+python-docx>=0.8.11

@@ -123,7 +123,7 @@ def _call_llm_to_summarize(text: str, config: Dict[str, str], prompt: str) -> st
         return f"生成摘要时API调用失败：{str(e)}"
 
 def execute(session_id: str, 
-            prompt = '你是一位专业的对话总结摘要助手。请对以下用户与AI Agent的对话内容进行简短、全面、清晰、准确的总结摘要，高效提取关键信息，如核心主题、目的重点、已知信息、关键操作、重要决策、待办事项等，忽略无关内容，忠于原文，不添加未出现信息，不捏造事实：\n\n') -> str:
+            prompt = '你是一位专业的对话总结摘要助手。请对以下用户与AI Agent的对话内容进行简短、全面、清晰、准确的总结摘要，完整呈现对话要点，高效提取关键信息，如核心主题、目的重点、已知信息、关键操作、重要决策、待办事项等，忽略无关内容，忠于原文，不添加未出现信息，不捏造事实：\n\n') -> str:
     """
     工具执行入口
     """
@@ -167,6 +167,6 @@ def execute(session_id: str,
         with open(summary_file, "w", encoding="utf-8") as f:
             f.write(result)
     except Exception as e:
-        return f"摘要已生成但保存失败：{str(e)}\n\n摘要内容：\n{result}"
+        return f"摘要已生成但保存失败：{str(e)}\n\n{result}"
 
-    return f"摘要：\n{result}"
+    return result

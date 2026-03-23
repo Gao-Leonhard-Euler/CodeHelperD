@@ -35,7 +35,7 @@ tool_def = {
                 # start 参数
                 "command": {
                     "type": "string",
-                    "description": "要执行的程序和参数（如 './a.out' 或 'python script.py'）"
+                    "description": "要执行的程序，可带有参数（如 './a.out' 或 'python script.py'）"
                 },
                 "cwd": {
                     "type": "string",

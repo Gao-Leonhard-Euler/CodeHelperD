@@ -417,7 +417,7 @@ def main():
     WARNING_TOKENS = int(math.floor(0.75*TOKENS)-8192)
     ERROR_TOKENS = int(math.floor(0.875*TOKENS)-8192)
     FORCE_SAVE_TOKENS = TOKENS - 8192
-    TOOL_TOKENS = int(math.floor(0.875*FORCE_SAVE_TOKENS)-8192)
+    TOOL_TOKENS = int(math.floor(0.875*FORCE_SAVE_TOKENS)-16384)
     print(f'模型上下文长度：{TOKENS}；对话预警长度：{WARNING_TOKENS}；强制保存长度：{FORCE_SAVE_TOKENS}；工具返回最大长度：{TOOL_TOKENS}')
     # 创建新会话文件
     history = load_history(os.path.join(MEMORY_DIR, 'last.json'))  # 通常为空，但若文件已存在则加载
@@ -454,7 +454,13 @@ def main():
             messages_for_api.append({"role": "system", "content": prompt})
         key_info = load_key_info()
         if key_info:
-            messages_for_api.append({"role": "system", "content": f"Key information:\n{key_info}"})
+            count_message=[{"role": "system", "content": prompt},{"role": "system", "content": f"Key information:\n{key_info}"}]
+            if count_tokens(count_message,tools_list)>=TOOL_TOKENS:
+                os.remove(KEY_INFO_FILE)
+                open(KEY_INFO_FILE, 'w').close()
+                print('key_info过长，已清空。')
+            else:
+                messages_for_api.append({"role": "system", "content": f"Key information:\n{key_info}"})
         messages_for_api.extend(history)
         messages_for_api.append({"role": "user", "content": user_input})
         history.append({"role": "user", "content": user_input})
@@ -473,7 +479,13 @@ def main():
                     messages_for_api.append({"role": "system", "content": prompt})
                 key_info = load_key_info()
                 if key_info:
-                    messages_for_api.append({"role": "system", "content": f"Key information:\n{key_info}"})
+                    count_message=[{"role": "system", "content": prompt},{"role": "system", "content": f"Key information:\n{key_info}"}]
+                    if count_tokens(count_message,tools_list)>=TOOL_TOKENS:
+                        os.remove(KEY_INFO_FILE)
+                        open(KEY_INFO_FILE, 'w').close()
+                        print('key_info过长，已清空。')
+                    else:
+                        messages_for_api.append({"role": "system", "content": f"Key information:\n{key_info}"})
                 history.insert(0, {"role": "system", "content": save_result})
                 messages_for_api.extend(history)
                 current_tokens = count_tokens(messages_for_api,tools_list)
@@ -558,11 +570,17 @@ def main():
                         messages_for_api.append({"role": "system", "content": prompt})
                     key_info = load_key_info()
                     if key_info:
-                        messages_for_api.append({"role": "system", "content": f"Key information:\n{key_info}"})
+                        count_message=[{"role": "system", "content": prompt},{"role": "system", "content": f"Key information:\n{key_info}"}]
+                        if count_tokens(count_message,tools_list)>=TOOL_TOKENS:
+                            os.remove(KEY_INFO_FILE)
+                            open(KEY_INFO_FILE, 'w').close()
+                            print('key_info过长，已清空。')
+                        else:
+                            messages_for_api.append({"role": "system", "content": f"Key information:\n{key_info}"})
                     messages_for_api.append(tool_message)
-                    filename = f"tool_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.txt"
+                    filename = f"tool_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
                     while os.path.exists(os.path.join(MEMORY_DIR, filename)):
-                        filename = f"tool_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.txt"
+                        filename = f"tool_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
                     with open(os.path.join(MEMORY_DIR, filename), "w", encoding="utf-8") as f:
                         f.write(result)
                     if count_tokens(messages=messages_for_api,tools=tools_list)>TOOL_TOKENS:
@@ -574,7 +592,7 @@ def main():
                         "tool_call_id": tool_call.id,
                         "content": result
                     }
-                    print(f"[工具结果]{result}")
+                    print(f"[工具结果]\n{result}")
                     # 将工具结果加入历史
                     history.append(tool_message)
 
@@ -584,7 +602,13 @@ def main():
                     messages_for_api.append({"role": "system", "content": prompt})
                 key_info = load_key_info()
                 if key_info:
-                    messages_for_api.append({"role": "system", "content": f"Key information:\n{key_info}"})
+                    count_message=[{"role": "system", "content": prompt},{"role": "system", "content": f"Key information:\n{key_info}"}]
+                    if count_tokens(count_message,tools_list)>=TOOL_TOKENS:
+                        os.remove(KEY_INFO_FILE)
+                        open(KEY_INFO_FILE, 'w').close()
+                        print('key_info过长，已清空。')
+                    else:
+                        messages_for_api.append({"role": "system", "content": f"Key information:\n{key_info}"})
                 messages_for_api.extend(history)
 
                 # 构建消息列表后，添加 token 检查
@@ -601,7 +625,13 @@ def main():
                             messages_for_api.append({"role": "system", "content": prompt})
                         key_info = load_key_info()
                         if key_info:
-                            messages_for_api.append({"role": "system", "content": f"Key information:\n{key_info}"})
+                            count_message=[{"role": "system", "content": prompt},{"role": "system", "content": f"Key information:\n{key_info}"}]
+                            if count_tokens(count_message,tools_list)>=TOOL_TOKENS:
+                                os.remove(KEY_INFO_FILE)
+                                open(KEY_INFO_FILE, 'w').close()
+                                print('key_info过长，已清空。')
+                            else:
+                                messages_for_api.append({"role": "system", "content": f"Key information:\n{key_info}"})
                         history.insert(0, {"role": "system", "content": save_result})
                         messages_for_api.extend(history)
                         current_tokens = count_tokens(messages_for_api,tools_list)
