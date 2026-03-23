@@ -578,15 +578,13 @@ def main():
                         else:
                             messages_for_api.append({"role": "system", "content": f"Key information:\n{key_info}"})
                     messages_for_api.append(tool_message)
-                    filename = f"tool_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-                    while os.path.exists(os.path.join(MEMORY_DIR, filename)):
+                    if count_tokens(messages=messages_for_api,tools=tools_list)>=TOOL_TOKENS:
                         filename = f"tool_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-                    with open(os.path.join(MEMORY_DIR, filename), "w", encoding="utf-8") as f:
-                        f.write(result)
-                    if count_tokens(messages=messages_for_api,tools=tools_list)>TOOL_TOKENS:
-                        result=f'工具调用结果过长，已保存至{filename}，可使用history_searcher工具访问'
-                    else:
-                        result=f'结果(已保存至{filename}):\n{result}'
+                        while os.path.exists(os.path.join(MEMORY_DIR, filename)):
+                            filename = f"tool_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+                        with open(os.path.join(MEMORY_DIR, filename), "w", encoding="utf-8") as f:
+                            f.write(result)
+                        result=f'工具结果过长，已保存至{filename}，可使用history_searcher工具访问'
                     tool_message = {
                         "role": "tool",
                         "tool_call_id": tool_call.id,

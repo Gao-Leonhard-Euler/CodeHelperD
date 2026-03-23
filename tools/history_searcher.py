@@ -231,14 +231,12 @@ def execute(action: str,
             start, end = _parse_time_range(start_time, end_time)
         except ValueError as e:
             return f"参数错误：{e}"
-
-    # 获取会话文件列表
-    files = _get_session_files(session_id, start, end)
-    if not files:
-        return "未找到符合条件的聊天记录。"
-
-    # 解析角色过滤
-    allowed_roles = _parse_roles(roles)
+        # 获取会话文件列表
+        files = _get_session_files(session_id, start, end)
+        if not files:
+            return "未找到符合条件的聊天记录。"
+        # 解析角色过滤
+        allowed_roles = _parse_roles(roles)
 
     if action == "search":
         if not keyword:
