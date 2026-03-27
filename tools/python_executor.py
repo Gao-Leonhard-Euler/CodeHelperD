@@ -36,6 +36,12 @@ tool_def = {
                     "type": "string",
                     "description": "要执行的 Python 代码（用于 run 操作）或 help 要求（用于 help 操作，输入 '-env' 则执行 'python --help-env'，默认为空）"
                 },
+                "encoding": {
+                    "type": "string",
+                    "enum": ["auto", "utf-8", "gbk", "ascii", "latin-1", "cp1252", "cp437", "gb2312", "gb18030"],
+                    "description": "输出编码：auto（根据平台自动选择，Windows用gbk，其他用utf-8）,utf-8,gbk,ascii,latin-1等。默认auto。",
+                    "default": "auto"
+                },
                 "timeout": {
                     "type": "number",
                     "description": "一次性执行的超时时间（秒），默认 4.0"
@@ -112,7 +118,7 @@ def _terminate_process(session: Dict[str, Any]):
     except Exception:
         pass
 
-def _collect_output(q: queue.Queue, timeout: float) -> str:
+def _collect_output(q: queue.Queue, timeout: float, encoding: str = 'utf-8') -> str:
     """收集队列中的输出"""
     items = []
     start = time.time()
@@ -141,14 +147,25 @@ def _collect_output(q: queue.Queue, timeout: float) -> str:
             lines.append("[进程已结束]")
             continue
         try:
-            text = data.decode('utf-8', errors='replace')
+            text = data.decode(encoding, errors='replace')
         except:
             text = str(data)
         lines.append(f"[{stream}] {text}")
     return "\n".join(lines)
 
+def _resolve_encoding(encoding: str) -> str:
+    """解析编码参数，auto根据平台选择"""
+    if encoding == 'auto':
+        # 根据平台自动选择编码
+        if sys.platform == 'win32':
+            return 'gbk'  # Windows控制台默认编码
+        else:
+            return 'utf-8'  # Linux/Mac通常使用UTF-8
+    return encoding
+
 def execute(action: str,
             code: Optional[str] = None,
+            encoding: str = 'auto',
             timeout: float = 4.0,
             session_id: Optional[str] = None,
             input_data: Optional[str] = None,
@@ -157,6 +174,9 @@ def execute(action: str,
     执行 Python 代码管理操作。
     """
     global _sessions
+
+    # 解析编码
+    resolved_encoding = _resolve_encoding(encoding)
 
     # 一次性执行
     if action == "run":
@@ -186,17 +206,19 @@ def execute(action: str,
         except subprocess.TimeoutExpired:
             process.kill()
             stdout, stderr = process.communicate()
-            return f"执行超时（{timeout}秒），部分输出：\nSTDOUT:\n{stdout.decode('utf-8', errors='replace')}\nSTDERR:\n{stderr.decode('utf-8', errors='replace')}"
+            out_text = stdout.decode(resolved_encoding, errors='replace')
+            err_text = stderr.decode(resolved_encoding, errors='replace')
+            return f"执行超时（{timeout}秒），部分输出：\nSTDOUT:\n{out_text}\nSTDERR:\n{err_text}"
 
         # 解码输出
-        out_text = stdout.decode('utf-8', errors='replace')
-        err_text = stderr.decode('utf-8', errors='replace')
+        out_text = stdout.decode(resolved_encoding, errors='replace')
+        err_text = stderr.decode(resolved_encoding, errors='replace')
 
         if return_code != 0:
             return f"执行失败（返回码 {return_code}）：\nSTDOUT:\n{out_text}\nSTDERR:\n{err_text}"
         else:
             if out_text or err_text:
-                return f"执行成功：\nSTDOUT:\n{out_text}\nSTDERR:\n{err_text}"
+                return f"编码: {resolved_encoding}\n执行成功：\nSTDOUT:\n{out_text}\nSTDERR:\n{err_text}"
             else:
                 return "执行成功，无输出。"
 
@@ -226,7 +248,8 @@ def execute(action: str,
             'process': process,
             'queue': q,
             'stop_event': stop_event,
-            'timeout_per_step': interactive_timeout
+            'timeout_per_step': interactive_timeout,
+            'encoding': resolved_encoding
         }
 
         t = threading.Thread(target=_reader_thread, args=(process, q, stop_event))
@@ -238,7 +261,7 @@ def execute(action: str,
             _sessions[sess_id] = session
 
         # 获取启动输出（通常是 Python 版本信息和提示符）
-        initial = _collect_output(q, timeout=0.5)
+        initial = _collect_output(q, timeout=0.5, encoding=resolved_encoding)
         if initial:
             return f"交互式会话 {sess_id} 已启动，初始输出：\n{initial}"
         else:
@@ -257,12 +280,13 @@ def execute(action: str,
         q = session['queue']
         stop_event = session['stop_event']
         step_timeout = interactive_timeout  # 使用传入或默认
+        session_encoding = session.get('encoding', 'utf-8')
 
         if stop_event.is_set() or process.poll() is not None:
             return f"会话 {session_id} 已结束。"
 
         # 发送输入前，先收集已有输出（作为历史）
-        existing = _collect_output(q, timeout=0)  # 不等待
+        existing = _collect_output(q, timeout=0, encoding=session_encoding)  # 不等待
 
         # 发送输入
         try:
@@ -274,7 +298,7 @@ def execute(action: str,
             return f"写入输入失败：{e}"
 
         # 收集新输出直到超时
-        new_output = _collect_output(q, timeout=step_timeout)
+        new_output = _collect_output(q, timeout=step_timeout, encoding=session_encoding)
 
         # 合并输出
         combined = existing

@@ -51,6 +51,9 @@ CodeHelperD 是一个基于 API 的智能代码助手 Agent，它能够理解自
 - `virtualenv>=20.0.0`: 用于创建和管理 python 虚拟环境
 - `PyMuPDF>=1.23.0`: 用于读取 PDF 文件
 - `openpyxl>=3.0.0`: 用于读取和编辑 xlsx 表格
+- `python-docx>=0.8.11`: 用于读取 docx 文件
+- `requests>=2.25.0`: 使用HTTP/HTTPS协议进行网络通信
+- `torch`: transformers 库需要
 
 ## 配置说明
 

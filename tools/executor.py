@@ -2,6 +2,7 @@
 """
 tools/executor.py
 执行可执行文件，支持交互式会话、超时控制和会话管理。
+支持编码参数，解决Windows中文乱码问题。
 """
 
 import os
@@ -23,7 +24,7 @@ tool_def = {
     "type": "function",
     "function": {
         "name": "executor",
-        "description": "执行程序并管理交互式会话。支持启动、发送输入、停止和列出会话。",
+        "description": "执行程序并管理交互式会话。支持启动、发送输入、停止和列出会话。支持编码参数解决中文乱码问题。",
         "parameters": {
             "type": "object",
             "properties": {
@@ -44,6 +45,12 @@ tool_def = {
                 "env": {
                     "type": "object",
                     "description": "环境变量字典（可选）"
+                },
+                "encoding": {
+                    "type": "string",
+                    "enum": ["auto", "utf-8", "gbk", "ascii", "latin-1", "cp1252", "cp437", "gb2312", "gb18030"],
+                    "description": "输出编码：auto（根据平台自动选择，Windows用gbk，其他用utf-8）,utf-8,gbk,ascii,latin-1等。默认auto。",
+                    "default": "auto"
                 },
                 "timeout_per_step": {
                     "type": "number",
@@ -82,13 +89,6 @@ def _reader_thread(process: subprocess.Popen, q: queue.Queue, stop_event: thread
     读取进程的 stdout 和 stderr，将数据放入队列。
     当进程结束或 stop_event 被设置时退出。
     """
-    # 为了同时读取两个流，需要分别处理
-    # 使用 select 或线程？这里为简单，为每个流创建单独的读取器？
-    # 更简单：使用两个线程，但管理复杂。我们可以使用非阻塞读取。
-    # 但为了跨平台，采用循环读取两个流，非阻塞方式。
-    # 在 Unix 上可以使用 os.set_blocking，在 Windows 上可以使用 PeekNamedPipe？复杂。
-    # 替代方案：使用两个队列，每个流一个线程。我们为每个会话启动两个读取线程，分别处理 stdout 和 stderr。
-    # 这样代码更清晰。
     def _read_stream(stream, stream_name, q):
         try:
             for line in iter(stream.readline, b''):
@@ -138,10 +138,28 @@ def _terminate_process(session: Dict[str, Any]):
     except Exception:
         pass
 
+def _resolve_encoding(encoding: str) -> str:
+    """解析编码参数，auto根据平台选择"""
+    if encoding == 'auto':
+        # 根据平台自动选择编码
+        if sys.platform == 'win32':
+            return 'gbk'  # Windows控制台默认编码
+        else:
+            return 'utf-8'  # Linux/Mac通常使用UTF-8
+    return encoding
+
+def _decode_bytes(data: bytes, encoding: str = 'utf-8') -> str:
+    """使用指定编码解码字节数据"""
+    try:
+        return data.decode(encoding, errors='replace')
+    except:
+        return str(data)
+
 def execute(action: str,
             command: Optional[str] = None,
             cwd: Optional[str] = None,
             env: Optional[Dict[str, str]] = None,
+            encoding: str = 'auto',
             timeout_per_step: float = 2.0,
             session_id: Optional[str] = None,
             input_data: Optional[str] = None,
@@ -150,6 +168,9 @@ def execute(action: str,
     执行器主函数。
     """
     global _sessions
+
+    # 解析编码
+    resolved_encoding = _resolve_encoding(encoding)
 
     # 启动新会话
     if action == "start":
@@ -193,7 +214,8 @@ def execute(action: str,
             'stop_event': stop_event,
             'timeout_per_step': timeout_per_step,
             'cwd': cwd,
-            'command': command
+            'command': command,
+            'encoding': resolved_encoding
         }
 
         # 启动读取线程
@@ -206,11 +228,11 @@ def execute(action: str,
             _sessions[sess_id] = session
 
         # 初始可能有一些输出，立即返回
-        output = _collect_output(session, timeout=0.1)  # 短超时获取启动输出
+        output = _collect_output(session, timeout=0.1, encoding=resolved_encoding)
         if output:
-            return f"会话 {sess_id} 已启动，初始输出：\n{output}"
+            return f"编码: {resolved_encoding}\n会话 {sess_id} 已启动，初始输出：\n{output}"
         else:
-            return f"会话 {sess_id} 已启动。"
+            return f"编码: {resolved_encoding}\n会话 {sess_id} 已启动。"
 
     # 发送输入到会话
     elif action == "send":
@@ -225,15 +247,10 @@ def execute(action: str,
         q = session['queue']
         stop_event = session['stop_event']
         step_timeout = timeout if timeout is not None else session.get('timeout_per_step', 2.0)
+        session_encoding = session.get('encoding', 'utf-8')
 
         if stop_event.is_set() or process.poll() is not None:
             return f"会话 {session_id} 已结束。"
-
-        # 先清空已有输出（可选，但为了保持顺序，我们先收集已有输出作为历史）
-        # 这里我们采用先读取所有现有输出，然后发送输入，再等待新输出。
-        # 但更好的做法是：返回之前未读取的输出 + 新输出。为了简化，我们每次发送都返回从上次到现在的所有输出。
-        # 实际上，每次调用 send 时，队列中可能堆积了之前的输出，我们需要将它们返回。
-        # 所以我们先收集队列中现有所有输出（不阻塞），然后发送输入，再收集新输出直到超时。
 
         # 收集现有输出
         existing = []
@@ -244,10 +261,10 @@ def execute(action: str,
             except queue.Empty:
                 break
 
-        # 发送输入
+        # 发送输入（使用会话编码）
         try:
             if input_data is not None:
-                process.stdin.write(input_data.encode('utf-8', errors='replace'))
+                process.stdin.write(input_data.encode(session_encoding, errors='replace'))
                 process.stdin.flush()
         except Exception as e:
             return f"写入输入失败：{e}"
@@ -276,11 +293,8 @@ def execute(action: str,
             if stream == 'EOF':
                 output_lines.append("[进程已结束]")
                 continue
-            # 解码数据
-            try:
-                text = data.decode('utf-8', errors='replace')
-            except:
-                text = str(data)
+            # 解码数据（使用会话编码）
+            text = _decode_bytes(data, session_encoding)
             # 去掉末尾换行以便显示整洁，但保留
             output_lines.append(f"[{stream}] {text}")
 
@@ -313,8 +327,8 @@ def execute(action: str,
     else:
         return f"错误：未知操作 {action}"
 
-def _collect_output(session: Dict[str, Any], timeout: float = 0.1) -> str:
-    """收集当前队列中的所有输出，最多等待 timeout 秒"""
+def _collect_output(session: Dict[str, Any], timeout: float = 0.1, encoding: str = 'utf-8') -> str:
+    """收集当前队列中的所有输出，最多等待 timeout 秒，使用指定编码解码"""
     q = session['queue']
     items = []
     start = time.time()
@@ -339,9 +353,6 @@ def _collect_output(session: Dict[str, Any], timeout: float = 0.1) -> str:
         if stream == 'EOF':
             lines.append("[进程已结束]")
             continue
-        try:
-            text = data.decode('utf-8', errors='replace')
-        except:
-            text = str(data)
+        text = _decode_bytes(data, encoding)
         lines.append(f"[{stream}] {text}")
     return "\n".join(lines)
