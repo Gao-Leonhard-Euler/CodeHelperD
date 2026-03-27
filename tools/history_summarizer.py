@@ -34,7 +34,7 @@ tool_def = {
 
 # 固定路径
 MEMORY_DIR = Path(__file__).parent.parent / "memory"
-HISTORY_CONFIG_FILE = Path(__file__).parent.parent / "history_config.json"
+HISTORY_CONFIG_FILE = Path(__file__).parent.parent / "config" / "history_config.json"
 
 def _load_api_config() -> Dict[str, str]:
     """读取 history_config.json 中的API配置"""

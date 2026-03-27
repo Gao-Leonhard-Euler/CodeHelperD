@@ -2,6 +2,7 @@ __pycache__/
 tools/__pycache__/
 venvs/
 memory/
+config/
 config.json
 history_config.json
 *.pyc

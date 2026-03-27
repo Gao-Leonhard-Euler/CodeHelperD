@@ -15,10 +15,11 @@ history: List[Dict[str, Any]] = []
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 MEMORY_DIR = os.path.join(BASE_DIR, "memory")
+CONFIG_DIR = os.path.join(BASE_DIR, "config")
 KEY_INFO_FILE = os.path.join(MEMORY_DIR, "key_info.txt")
-HISTORY_CONFIG_FILE = os.path.join(BASE_DIR, "history_config.json")
+HISTORY_CONFIG_FILE = os.path.join(CONFIG_DIR, "history_config.json")
 PROMPT_FILE = os.path.join(BASE_DIR, "prompt.txt")
-CONFIG_FILE = os.path.join(BASE_DIR, "config.json")
+CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
 
 # ==================== 配置管理 ====================
 
@@ -369,10 +370,9 @@ def save_history(session_file: str, messages: List[Dict[str, Any]]):
         json.dump(messages, f, indent=2, ensure_ascii=False)
 
 # ==================== 工具加载 ====================
-
+from tools import get_tools, call_tool, refresh_tools
 # 从 tools 包导入工具列表和调用函数
 try:
-    from tools import get_tools, call_tool
     tools_list = get_tools()
     print(f"已加载 {len(tools_list)} 个工具")
 except ImportError as e:
@@ -450,6 +450,8 @@ def main():
             user_input = user_input_or_cmd   # 正常用户消息
         # 构建消息列表（关键信息 + 历史 + 当前用户输入）
         messages_for_api = []
+        refresh_tools()
+        tools_list = get_tools()
         if prompt:
             messages_for_api.append({"role": "system", "content": prompt})
         key_info = load_key_info()
@@ -544,6 +546,8 @@ def main():
 
             # 处理工具调用
             if assistant_message.tool_calls:
+                refresh_tools()
+                tools_list = get_tools()
                 for tool_call in assistant_message.tool_calls:
                     tool_name = tool_call.function.name
                     try:

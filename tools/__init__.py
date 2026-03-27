@@ -89,7 +89,6 @@ def _load_tools():
 
         _tools.append(tool_def)
         _tool_map[func_name] = module.execute
-        print(f"Loaded tool: {func_name}")
 
 # 执行加载
 _load_tools()
@@ -117,3 +116,10 @@ def call_tool(name: str, args: Dict[str, Any]) -> str:
 # 可选：打印已加载的工具列表
 if __name__ == "__main__":
     print("Loaded tools:", list(_tool_map.keys()))
+
+def refresh_tools():
+    """重新加载所有工具模块，更新工具列表和映射"""
+    global _tools, _tool_map
+    _tools.clear()
+    _tool_map.clear()
+    _load_tools()
