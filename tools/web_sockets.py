@@ -145,7 +145,7 @@ tool_def = {
                 },
                 "encoding": {
                     "type": "string",
-                    "description": "数据编码（用于send和receive操作），如'utf-8'、'ascii'、'binary'",
+                    "description": "数据编码（用于send和receive操作），如'utf-8'(默认)、'ascii'、'binary'",
                     "default": "utf-8"
                 }
             },

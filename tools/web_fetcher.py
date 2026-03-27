@@ -32,7 +32,7 @@ tool_def = {
                 "action": {
                     "type": "string",
                     "enum": ["save", "request", "get", "post", "info"],
-                    "description": "操作类型：save-使用urllib保存网页HTML到文件；request-使用requests发送HTTP/HTTPS请求；get-发送GET请求；post-发送POST请求；info-获取工具信息。",
+                    "description": "操作类型：save-保存网页HTML到文件；request-发送HTTP/HTTPS请求；get-发送GET请求；post-发送POST请求；info-获取工具信息。",
                     "default": "request"
                 },
                 "url": {
@@ -41,7 +41,7 @@ tool_def = {
                 },
                 "method": {
                     "type": "string",
-                    "description": "HTTP方法（用于request操作），如GET、POST、PUT、DELETE等",
+                    "description": "HTTP方法（用于request操作），如GET、POST、PUT、DELETE",
                     "default": "GET"
                 },
                 "headers": {
